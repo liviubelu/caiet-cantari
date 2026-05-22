@@ -6,6 +6,7 @@ import { eq, and } from "drizzle-orm"
 import { auth } from "@/auth"
 import { notFound } from "next/navigation"
 import { getCategoryColor } from "@/lib/categories"
+import { canEditSongs } from "@/auth"
 import Link from "next/link"
 import { SongDetailClient } from "./SongDetailClient"
 
@@ -48,7 +49,7 @@ export default async function SongPage({ params }: Props) {
           Înapoi
         </Link>
         <div className="flex items-center gap-2">
-          {session?.user && (
+          {session?.user && canEditSongs(session.user.role) && (
             <Link href={`/song/${id}/edit`} className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1">
               Editează
             </Link>

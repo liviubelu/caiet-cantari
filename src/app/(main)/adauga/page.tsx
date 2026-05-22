@@ -1,13 +1,13 @@
 export const dynamic = "force-dynamic"
 
-import { auth } from "@/auth"
+import { auth, canEditSongs } from "@/auth"
 import { redirect } from "next/navigation"
 import { SongForm } from "@/components/SongForm"
 import Link from "next/link"
 
 export default async function AdaugaPage() {
   const session = await auth()
-  if (!session?.user?.id) redirect("/login")
+  if (!session?.user?.id || !canEditSongs(session.user.role)) redirect("/")
 
   return (
     <div>

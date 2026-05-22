@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic"
 
-import { auth } from "@/auth"
+import { auth, canEditSongs } from "@/auth"
 import { db } from "@/lib/db"
 import { songs, favorites } from "@/lib/schema"
 import { eq, asc, ilike, or } from "drizzle-orm"
@@ -55,7 +55,7 @@ export default async function HomePage({ searchParams }: Props) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {session?.user && (
+            {session?.user && canEditSongs(session.user.role) && (
               <Link
                 href="/adauga"
                 className="w-8 h-8 rounded-full bg-indigo-700 flex items-center justify-center shadow-sm hover:bg-indigo-600 transition"

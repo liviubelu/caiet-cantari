@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { songs } from "@/lib/schema"
-import { auth } from "@/auth"
+import { auth, canEditSongs } from "@/auth"
 import { eq } from "drizzle-orm"
 import { extractFirstLine } from "@/lib/chordpro"
 
@@ -14,7 +14,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
-  if (!session?.user?.id) return NextResponse.json({ error: "Autentificare necesară." }, { status: 401 })
+  if (!session?.user?.id || !canEditSongs(session.user.role)) {
+    return NextResponse.json({ error: "Acces interzis." }, { status: 403 })
+  }
 
   const { id } = await params
   const { title, content, category, defaultKey } = await req.json()
@@ -35,7 +37,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
-  if (!session?.user?.id) return NextResponse.json({ error: "Autentificare necesară." }, { status: 401 })
+  if (!session?.user?.id || !canEditSongs(session.user.role)) {
+    return NextResponse.json({ error: "Acces interzis." }, { status: 403 })
+  }
 
   const { id } = await params
   await db.delete(songs).where(eq(songs.id, id))

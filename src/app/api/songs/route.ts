@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { songs } from "@/lib/schema"
-import { auth } from "@/auth"
+import { auth, canEditSongs } from "@/auth"
 import { asc, ilike, or } from "drizzle-orm"
 import { extractFirstLine } from "@/lib/chordpro"
 
@@ -23,8 +23,8 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const session = await auth()
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Autentificare necesară." }, { status: 401 })
+  if (!session?.user?.id || !canEditSongs(session.user.role)) {
+    return NextResponse.json({ error: "Acces interzis." }, { status: 403 })
   }
 
   const { title, content, category, defaultKey } = await req.json()

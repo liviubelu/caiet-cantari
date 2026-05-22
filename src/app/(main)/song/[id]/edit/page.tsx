@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic"
 import { db } from "@/lib/db"
 import { songs } from "@/lib/schema"
 import { eq } from "drizzle-orm"
-import { auth } from "@/auth"
+import { auth, canEditSongs } from "@/auth"
 import { notFound, redirect } from "next/navigation"
 import { SongForm } from "@/components/SongForm"
 
@@ -13,7 +13,7 @@ interface Props {
 
 export default async function EditSongPage({ params }: Props) {
   const session = await auth()
-  if (!session?.user?.id) redirect("/login")
+  if (!session?.user?.id || !canEditSongs(session.user.role)) redirect("/")
 
   const { id } = await params
   const [song] = await db.select().from(songs).where(eq(songs.id, id)).limit(1)

@@ -1,11 +1,22 @@
 import { pgTable, text, timestamp, uuid, unique } from "drizzle-orm/pg-core"
 
+export type UserRole = "admin" | "instrumentist" | "user"
+
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
   firstName: text("first_name"),
   lastName: text("last_name"),
   passwordHash: text("password_hash"),
+  role: text("role").notNull().default("user"),
+  emailVerified: timestamp("email_verified"),
+  createdAt: timestamp("created_at").defaultNow(),
+})
+
+export const verificationTokens = pgTable("verification_tokens", {
+  token: text("token").primaryKey(),
+  email: text("email").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 })
 

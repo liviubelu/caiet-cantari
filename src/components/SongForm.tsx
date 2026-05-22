@@ -176,7 +176,7 @@ export function SongForm({ songId, initialValues }: Props) {
           {diatonicChords.length > 0 ? (
             <>
               <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mr-1 flex-shrink-0">
-                {defaultKey}
+                Acorduri
               </span>
               <div className="flex gap-1.5 flex-wrap">
                 {diatonicChords.map((chord) => (
