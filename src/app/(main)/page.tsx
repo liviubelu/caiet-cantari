@@ -1,0 +1,139 @@
+export const dynamic = "force-dynamic"
+
+import { auth } from "@/auth"
+import { db } from "@/lib/db"
+import { songs, favorites } from "@/lib/schema"
+import { eq, asc, ilike, or } from "drizzle-orm"
+import { SongCard } from "@/components/SongCard"
+import Link from "next/link"
+
+interface Props {
+  searchParams: Promise<{ q?: string }>
+}
+
+export default async function HomePage({ searchParams }: Props) {
+  const session = await auth()
+  const { q } = await searchParams
+
+  let query = db.select().from(songs).orderBy(asc(songs.title)).$dynamic()
+  if (q) {
+    query = query.where(or(ilike(songs.title, `%${q}%`), ilike(songs.firstLine, `%${q}%`)))
+  }
+  const allSongs = await query
+
+  const favSet = new Set<string>()
+  if (session?.user?.id) {
+    const favs = await db.select().from(favorites).where(eq(favorites.userId, session.user.id))
+    favs.forEach((f) => favSet.add(f.songId))
+  }
+
+  const grouped = allSongs.reduce<Record<string, typeof allSongs>>((acc, song) => {
+    const letter = song.title[0]?.toUpperCase() ?? "#"
+    if (!acc[letter]) acc[letter] = []
+    acc[letter].push(song)
+    return acc
+  }, {})
+
+  const initials = session?.user?.name
+    ? session.user.name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()
+    : null
+
+  return (
+    <div>
+      <div className="sticky top-0 z-40 bg-[#f0f2f5]/95 backdrop-blur-sm px-4 pt-12 pb-3">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 bg-indigo-700 rounded-lg flex items-center justify-center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M12 3v18M3 12h18" stroke="white" strokeWidth="2.8" strokeLinecap="round" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-[9px] font-semibold tracking-widest text-gray-400 uppercase leading-none">
+                Biserica
+              </p>
+              <p className="text-sm font-bold text-gray-900 leading-tight">Bartolomeu</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {session?.user && (
+              <Link
+                href="/adauga"
+                className="w-8 h-8 rounded-full bg-indigo-700 flex items-center justify-center shadow-sm hover:bg-indigo-600 transition"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 5v14M5 12h14" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+                </svg>
+              </Link>
+            )}
+            {initials ? (
+              <Link href="/cont" className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-[11px] font-bold text-gray-600 hover:bg-gray-300 transition">
+                {initials}
+              </Link>
+            ) : (
+              <Link href="/login" className="text-xs font-semibold text-indigo-700 hover:underline">
+                Login
+              </Link>
+            )}
+          </div>
+        </div>
+
+        <h1 className="text-[28px] font-display font-bold text-gray-900 leading-tight">
+          Caiet de cântări
+        </h1>
+        <p className="text-sm text-gray-500 mt-0.5">
+          {allSongs.length} {allSongs.length === 1 ? "cântare" : "cântări"}
+          {favSet.size > 0 && ` · ${favSet.size} favorite`}
+        </p>
+
+        <div className="mt-4 relative">
+          <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+            <path d="M20 20l-3-3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <form>
+            <input
+              name="q"
+              defaultValue={q}
+              placeholder="Caută după titlu sau prima linie…"
+              className="w-full bg-white border border-gray-200 rounded-xl pl-10 pr-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition"
+            />
+          </form>
+        </div>
+      </div>
+
+      <div className="px-4 py-2">
+        {allSongs.length === 0 && (
+          <div className="text-center py-16 text-gray-400">
+            <p className="text-sm">
+              {q ? `Nicio melodie găsită pentru „${q}"` : "Nicio melodie adăugată încă."}
+            </p>
+            {session?.user && !q && (
+              <Link href="/adauga" className="mt-4 inline-block text-sm font-semibold text-indigo-700 hover:underline">
+                Adaugă prima melodie
+              </Link>
+            )}
+          </div>
+        )}
+
+        {Object.keys(grouped)
+          .sort()
+          .map((letter) => (
+            <div key={letter} className="mb-4">
+              <p className="text-xs font-bold text-gray-400 px-1 mb-2">{letter}</p>
+              <div className="space-y-2">
+                {grouped[letter].map((song) => (
+                  <SongCard
+                    key={song.id}
+                    song={song}
+                    favorited={favSet.has(song.id)}
+                    authenticated={!!session?.user}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+      </div>
+    </div>
+  )
+}
