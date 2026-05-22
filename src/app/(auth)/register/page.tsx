@@ -4,6 +4,7 @@ import { useState } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { ChurchIcon } from "@/components/ChurchIcon"
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -44,9 +45,7 @@ export default function RegisterPage() {
     <div>
       <div className="flex flex-col items-center mb-8">
         <div className="w-12 h-12 bg-indigo-700 rounded-xl flex items-center justify-center mb-4 shadow-md">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <path d="M12 3v18M3 12h18" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-          </svg>
+          <ChurchIcon size={22} />
         </div>
         <p className="text-[11px] font-semibold tracking-widest text-gray-400 uppercase mb-1">
           Cont Nou

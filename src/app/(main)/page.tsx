@@ -6,6 +6,7 @@ import { songs, favorites } from "@/lib/schema"
 import { eq, asc, ilike, or } from "drizzle-orm"
 import { SongCard } from "@/components/SongCard"
 import Link from "next/link"
+import { ChurchIcon } from "@/components/ChurchIcon"
 
 interface Props {
   searchParams: Promise<{ q?: string }>
@@ -44,9 +45,7 @@ export default async function HomePage({ searchParams }: Props) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 bg-indigo-700 rounded-lg flex items-center justify-center">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M12 3v18M3 12h18" stroke="white" strokeWidth="2.8" strokeLinecap="round" />
-              </svg>
+              <ChurchIcon size={14} />
             </div>
             <div>
               <p className="text-[9px] font-semibold tracking-widest text-gray-400 uppercase leading-none">

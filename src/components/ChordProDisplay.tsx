@@ -7,9 +7,10 @@ import { transposeContent } from "@/lib/transpose"
 interface Props {
   content: string
   semitones?: number
+  showChords?: boolean
 }
 
-export function ChordProDisplay({ content, semitones = 0 }: Props) {
+export function ChordProDisplay({ content, semitones = 0, showChords = true }: Props) {
   const lines = useMemo(() => {
     const transposed = transposeContent(content, semitones)
     return parseChordPro(transposed)
@@ -29,7 +30,7 @@ export function ChordProDisplay({ content, semitones = 0 }: Props) {
         const isEmpty = line.segments.every((s) => !s.chord && !s.text.trim())
         if (isEmpty) return <div key={i} className="h-3" />
 
-        if (!line.hasChords) {
+        if (!line.hasChords || !showChords) {
           return (
             <div key={i} className="leading-6 text-gray-900">
               {line.segments.map((s, j) => (
@@ -43,13 +44,9 @@ export function ChordProDisplay({ content, semitones = 0 }: Props) {
           <div key={i} className="flex flex-wrap items-end leading-none mb-1">
             {line.segments.map((seg, j) => (
               <span key={j} className="inline-flex flex-col">
-                {seg.chord ? (
-                  <span className="text-[12px] font-bold text-blue-600 leading-none mb-0.5 pr-2">
-                    {seg.chord}
-                  </span>
-                ) : (
-                  <span className="text-[12px] leading-none mb-0.5 select-none">&nbsp;</span>
-                )}
+                <span className="text-[12px] font-bold text-blue-600 leading-none mb-0.5 pr-2">
+                  {seg.chord ?? " "}
+                </span>
                 <span className="text-gray-900 leading-6">
                   {seg.text || (seg.chord ? "​" : "")}
                 </span>
