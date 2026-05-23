@@ -78,7 +78,7 @@ function LineItem({
           >
             {seg.chord ?? " "}
           </span>
-          <span className="text-gray-900 leading-6">
+          <span className="text-gray-900 leading-6 whitespace-pre">
             {seg.text || (seg.chord ? "​" : "")}
           </span>
         </span>

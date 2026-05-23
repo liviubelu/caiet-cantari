@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { ChordProDisplay } from "./ChordProDisplay"
 import { CATEGORIES } from "@/lib/categories"
-import { NOTES } from "@/lib/transpose"
+import { NOTES, transposeContent, semitonesBetween } from "@/lib/transpose"
 import { DIATONIC, SECTIONS } from "@/lib/diatonic"
 
 // ── Gemini usage tracking (localStorage, resets daily) ──────────────────────
@@ -301,7 +301,14 @@ export function SongForm({ songId, initialValues }: Props) {
           </label>
           <select
             value={defaultKey}
-            onChange={(e) => setDefaultKey(e.target.value)}
+            onChange={(e) => {
+              const newKey = e.target.value
+              if (newKey && defaultKey && newKey !== defaultKey && content) {
+                const steps = semitonesBetween(defaultKey, newKey)
+                if (steps !== 0) setContent(transposeContent(content, steps))
+              }
+              setDefaultKey(newKey)
+            }}
             className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition"
           >
             <option value="">—</option>

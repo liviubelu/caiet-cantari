@@ -28,4 +28,14 @@ export function getTransposedKey(defaultKey: string | null | undefined, semitone
   return transposeChord(defaultKey, semitones)
 }
 
+export function semitonesBetween(fromKey: string, toKey: string): number {
+  const rootFrom = fromKey.match(/^[A-G][b#]?/)?.[0] ?? fromKey
+  const rootTo = toKey.match(/^[A-G][b#]?/)?.[0] ?? toKey
+  const fromIdx = noteIndex(rootFrom)
+  const toIdx = noteIndex(rootTo)
+  if (fromIdx < 0 || toIdx < 0) return 0
+  const diff = ((toIdx - fromIdx) + 12) % 12
+  return diff > 6 ? diff - 12 : diff
+}
+
 export const NOTES = SHARPS

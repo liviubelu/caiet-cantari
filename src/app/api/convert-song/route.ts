@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai"
+import { GoogleGenAI } from "@google/genai"
 import { type NextRequest } from "next/server"
 import { getSession } from "@/lib/session"
 import { canEditSongs } from "@/auth"
@@ -57,7 +57,6 @@ Return ONLY a valid JSON object, no markdown, no explanation:
 }`
 
 function extractJSON(text: string): { title: string; defaultKey: string; content: string } {
-  // Strip markdown code fences if present
   const cleaned = text
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/\s*```\s*$/i, "")
@@ -66,11 +65,8 @@ function extractJSON(text: string): { title: string; defaultKey: string; content
 }
 
 function normalizeKey(key: string): string {
-  // Normalize keys like "c#" → "C#m", already-standard keys pass through
   if (!key) return ""
-  // If it looks like a standard key already, return as-is
   if (/^[A-G][b#]?m?$/.test(key)) return key
-  // Lowercase single letter = minor
   if (/^[a-g][b#]?$/.test(key)) return key.toUpperCase() + "m"
   return key
 }
@@ -101,12 +97,10 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Niciun fișier primit." }, { status: 400 })
   }
 
-  // File size limit: 10MB
   if (file.size > 10 * 1024 * 1024) {
     return Response.json({ error: "Fișierul este prea mare (maxim 10MB)." }, { status: 400 })
   }
 
-  // Validate mime type
   const allowed = ["image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf"]
   const mimeType = file.type === "image/jpg" ? "image/jpeg" : file.type
   if (!allowed.includes(mimeType)) {
@@ -119,20 +113,26 @@ export async function POST(req: NextRequest) {
   const bytes = await file.arrayBuffer()
   const base64 = Buffer.from(bytes).toString("base64")
 
-  const genAI = new GoogleGenerativeAI(apiKey)
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" })
+  const ai = new GoogleGenAI({ apiKey })
 
   let responseText: string
   try {
-    const result = await model.generateContent([
-      { inlineData: { data: base64, mimeType: mimeType as string } },
-      PROMPT,
-    ])
-    responseText = result.response.text()
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { inlineData: { data: base64, mimeType } },
+            { text: PROMPT },
+          ],
+        },
+      ],
+    })
+    responseText = response.text ?? ""
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
 
-    // Rate limit hit
     if (msg.includes("429") || msg.toLowerCase().includes("quota")) {
       return Response.json(
         {
@@ -143,7 +143,6 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Invalid API key
     if (msg.includes("400") || msg.toLowerCase().includes("api key")) {
       return Response.json(
         { error: "GOOGLE_AI_KEY invalid. Verifică key-ul în Vercel → Environment Variables." },
