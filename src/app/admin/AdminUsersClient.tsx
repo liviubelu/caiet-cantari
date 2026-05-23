@@ -18,9 +18,16 @@ const ROLE_LABELS: Record<string, { label: string; color: string }> = {
   user:         { label: "Utilizator",    color: "bg-gray-100 text-gray-600" },
 }
 
+const EMPTY_FORM = { email: "", firstName: "", lastName: "", password: "", role: "user" }
+
 export function AdminUsersClient({ initialUsers }: { initialUsers: User[] }) {
   const [userList, setUserList] = useState(initialUsers)
   const [loading, setLoading] = useState<string | null>(null)
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [form, setForm] = useState(EMPTY_FORM)
+  const [formError, setFormError] = useState("")
+  const [formLoading, setFormLoading] = useState(false)
+  const [showPass, setShowPass] = useState(false)
 
   async function changeRole(userId: string, role: string) {
     setLoading(userId)
@@ -34,6 +41,27 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: User[] }) {
       const updated = await res.json()
       setUserList((prev) => prev.map((u) => (u.id === userId ? { ...u, role: updated.role } : u)))
     }
+  }
+
+  async function addUser(e: React.FormEvent) {
+    e.preventDefault()
+    setFormError("")
+    setFormLoading(true)
+    const res = await fetch("/api/admin/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    })
+    let data: User & { error?: string }
+    try { data = await res.json() } catch { data = { error: "Eroare necunoscută." } as User & { error: string } }
+    setFormLoading(false)
+    if (!res.ok) {
+      setFormError(data.error ?? "A apărut o eroare.")
+      return
+    }
+    setUserList((prev) => [...prev, data])
+    setForm(EMPTY_FORM)
+    setShowAddForm(false)
   }
 
   const verified = userList.filter((u) => u.emailVerified)
@@ -54,6 +82,79 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: User[] }) {
           </div>
         ))}
       </div>
+
+      {/* Add user button */}
+      <button
+        onClick={() => { setShowAddForm((v) => !v); setFormError("") }}
+        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-gray-200 text-sm font-semibold text-gray-500 hover:border-indigo-300 hover:text-indigo-600 transition"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+        {showAddForm ? "Anulează" : "Adaugă utilizator"}
+      </button>
+
+      {/* Add user form */}
+      {showAddForm && (
+        <form onSubmit={addUser} className="bg-white rounded-xl p-4 border border-indigo-100 space-y-3">
+          <p className="text-xs font-semibold tracking-widest text-gray-400 uppercase mb-1">Cont nou</p>
+          <div className="flex gap-2">
+            <input
+              value={form.firstName}
+              onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
+              placeholder="Prenume"
+              className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+            />
+            <input
+              value={form.lastName}
+              onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
+              placeholder="Nume"
+              className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+            />
+          </div>
+          <input
+            type="email"
+            value={form.email}
+            onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+            placeholder="email@exemplu.com"
+            required
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+          />
+          <div className="relative">
+            <input
+              type={showPass ? "text" : "password"}
+              value={form.password}
+              onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+              placeholder="Parolă temporară (min. 6 caractere)"
+              required
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 pr-16"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPass((v) => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-600"
+            >
+              {showPass ? "Ascunde" : "Arată"}
+            </button>
+          </div>
+          <select
+            value={form.role}
+            onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400 bg-white"
+          >
+            <option value="user">Utilizator</option>
+            <option value="instrumentist">Instrumentist</option>
+          </select>
+          {formError && <p className="text-sm text-red-500">{formError}</p>}
+          <button
+            type="submit"
+            disabled={formLoading}
+            className="w-full bg-indigo-700 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-indigo-600 transition disabled:opacity-50"
+          >
+            {formLoading ? "Se creează..." : "Creează cont"}
+          </button>
+        </form>
+      )}
 
       {/* Verified users */}
       <div>

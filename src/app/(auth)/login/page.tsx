@@ -69,9 +69,9 @@ export default function LoginPage() {
             <label className="block text-[11px] font-semibold tracking-widest text-gray-500 uppercase">
               Parolă
             </label>
-            <button type="button" className="text-xs text-gray-400 hover:text-gray-600">
+            <Link href="/forgot-password" className="text-xs text-gray-400 hover:text-gray-600">
               Ai uitat parola?
-            </button>
+            </Link>
           </div>
           <div className="relative">
             <input

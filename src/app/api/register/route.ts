@@ -24,7 +24,17 @@ export async function POST(req: Request) {
     .values({ token, email: normalizedEmail, expiresAt })
     .onConflictDoNothing()
 
-  await sendVerificationEmail(normalizedEmail, token)
+  try {
+    await sendVerificationEmail(normalizedEmail, token)
+  } catch (err) {
+    // Clean up the token if email failed to send
+    await db.delete(verificationTokens).where(eq(verificationTokens.token, token))
+    console.error("Email send error:", err)
+    return NextResponse.json(
+      { error: "Nu s-a putut trimite emailul de confirmare. Contactează administratorul pentru a-ți crea contul." },
+      { status: 500 }
+    )
+  }
 
   return NextResponse.json({ ok: true }, { status: 200 })
 }

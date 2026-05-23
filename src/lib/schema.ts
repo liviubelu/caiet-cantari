@@ -31,6 +31,13 @@ export const songs = pgTable("songs", {
   createdAt: timestamp("created_at").defaultNow(),
 })
 
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  token: text("token").primaryKey(),
+  email: text("email").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+})
+
 export const favorites = pgTable("favorites", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id")
