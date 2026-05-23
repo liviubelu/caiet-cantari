@@ -30,6 +30,16 @@ For every chord symbol above a lyric line:
 - If a chord falls between two words, place it at the start of the next word
 - Keep all original punctuation and spacing
 
+━━━ LOWERCASE = MINOR CHORD (Romanian convention) ━━━
+Many Romanian song sheets write minor chords as a single lowercase letter.
+Convert them to standard ChordPro notation by appending 'm':
+  e  → Em    a  → Am    d  → Dm    g  → Gm    b  → Bm
+  c  → Cm    f  → Fm    h  → Bm   (h is sometimes used for B in Romanian notation)
+Uppercase letters remain major: E → E, A → A, D → D, G → G, B → B
+A chord written as e7 → Em7, a minor variants like eb → Ebm, etc.
+This ONLY applies to standalone single lowercase root letters used as chord symbols above lyrics.
+Do NOT alter lyrics text — this rule is exclusively for chord names inside [ ].
+
 ━━━ LAYOUT HANDLING ━━━
 - Single column: process top to bottom
 - Two columns: identify left and right column sections, then return them in MUSICAL ORDER
