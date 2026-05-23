@@ -22,13 +22,16 @@ export function SongDetailClient({ content, defaultKey, songId, isFavorited, isA
   const [semitones, setSemitones] = useState(0)
   const [showChords, setShowChords] = useState(true)
   const [fontSize, setFontSize] = useState(FONT_DEFAULT)
+  const [twoColumns, setTwoColumns] = useState(false)
 
   useEffect(() => {
-    const saved = localStorage.getItem("songFontSize")
-    if (saved) {
-      const n = parseInt(saved)
+    const savedSize = localStorage.getItem("songFontSize")
+    if (savedSize) {
+      const n = parseInt(savedSize)
       if (!isNaN(n)) setFontSize(n)
     }
+    const savedCols = localStorage.getItem("songTwoColumns")
+    if (savedCols !== null) setTwoColumns(savedCols === "1")
   }, [])
 
   function changeFontSize(delta: number) {
@@ -39,8 +42,17 @@ export function SongDetailClient({ content, defaultKey, songId, isFavorited, isA
     })
   }
 
+  function toggleColumns() {
+    setTwoColumns((prev) => {
+      const next = !prev
+      localStorage.setItem("songTwoColumns", next ? "1" : "0")
+      return next
+    })
+  }
+
   return (
     <div>
+      {/* Controls bar */}
       <div className="px-4 py-3 border-t border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
         <Transposer defaultKey={defaultKey} semitones={semitones} onChange={setSemitones} />
 
@@ -65,6 +77,23 @@ export function SongDetailClient({ content, defaultKey, songId, isFavorited, isA
               A+
             </button>
           </div>
+
+          {/* Two-column toggle — desktop only */}
+          <button
+            onClick={toggleColumns}
+            className={`hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+              twoColumns
+                ? "bg-indigo-50 border-indigo-200 text-indigo-700"
+                : "bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-200"
+            }`}
+            title={twoColumns ? "O coloană" : "Două coloane"}
+          >
+            <svg width="13" height="13" viewBox="0 0 22 16" fill="none">
+              <rect x="0.5" y="0.5" width="9" height="15" rx="1.5" stroke="currentColor" strokeWidth="1.5" fill={twoColumns ? "currentColor" : "none"} fillOpacity={twoColumns ? 0.15 : 0} />
+              <rect x="12.5" y="0.5" width="9" height="15" rx="1.5" stroke="currentColor" strokeWidth="1.5" fill={twoColumns ? "currentColor" : "none"} fillOpacity={twoColumns ? 0.15 : 0} />
+            </svg>
+            {twoColumns ? "1 coloană" : "2 coloane"}
+          </button>
 
           {/* Chords / Lyrics toggle */}
           <button
@@ -92,8 +121,15 @@ export function SongDetailClient({ content, defaultKey, songId, isFavorited, isA
         </div>
       </div>
 
+      {/* Song content */}
       <div className="px-4 py-5 lg:px-8 lg:py-7">
-        <ChordProDisplay content={content} semitones={semitones} showChords={showChords} fontSize={fontSize} />
+        <ChordProDisplay
+          content={content}
+          semitones={semitones}
+          showChords={showChords}
+          fontSize={fontSize}
+          twoColumns={twoColumns}
+        />
       </div>
     </div>
   )
