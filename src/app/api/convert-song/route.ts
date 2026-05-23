@@ -10,33 +10,34 @@ Your task is to convert song sheets (images or PDFs) into ChordPro format with P
 
 CRITICAL RULE — NEVER ADD HYPHENS: Do NOT add hyphens or dashes to any word in the lyrics. If you see "singura" write "singura", never "sin-gura". ChordPro places chords mid-word WITHOUT hyphens. Hyphens are FORBIDDEN unless they already exist in the original text.
 
-HOW TO MAP CHORD POSITIONS — USE YOUR VISION:
-You are a vision model. You can SEE the image. For each chord+lyrics pair:
-1. Look at the chord symbol in the image and note its visual horizontal center (pixel x position)
-2. Look at the lyrics line directly below and find the letter/syllable at that same pixel x position
-3. Insert [Chord] immediately BEFORE that letter — no space between ] and the letter
+HOW TO MAP CHORD POSITIONS — VERTICAL DROP METHOD:
+For every chord symbol in the image, imagine dropping a vertical line straight down from the CENTER of that chord name to the lyrics line below. The letter the vertical line hits is where you place [Chord].
 
-You do NOT need to count characters. Use your visual perception: the chord "D" printed above the letter "C" in "Cine" means [D] goes before "C". Trust what you see in the image.
+Step-by-step for each chord+lyric pair:
+1. Find the chord name in the image (e.g. "F#m")
+2. Mentally draw a vertical line from the center of "F#m" straight down to the lyric
+3. That letter (could be mid-word!) is where you insert [F#m]
+4. No space between [F#m] and that letter
 
-VISUAL EXAMPLES:
+NEVER ADD HYPHENS. If the vertical line lands mid-word, insert the chord there with NO hyphen. Example: vertical line from "C#m" drops onto "ț" in "mulțumim" → output: mul[C#m]țumim (no hyphen, chord inserted at that exact letter).
 
-Example A — chord visually above a word start:
-Image shows:  "G" printed above "N" of "Nădejdea", "D" printed above "C" of "Cine"
+WORKED EXAMPLES:
+
+Example A — vertical line from "G" drops onto "N" of "Nădejdea"; from "D" drops onto "C" of "Cine":
 OUTPUT: [G]Nădejdea noastră [D]Cine e?
 
-Example B — chord visually above middle of a word, NO HYPHEN:
-Image shows: "C#m" printed above the "ț" in "mulțumim", "G#m" above the second "m" ("mim")
-OUTPUT: [E]Veniți, [B]să Îi [C#m]mulțu[G#m]mim, veniți
-← "mulțumim" is written without any hyphen. The chord is simply inserted at that letter.
-
-Example C — chord visually above a word that follows other text:
-Image shows: "Bm" above "C" of first "Cristos", "A" above "C" of second "Cristos"
+Example B — vertical line from "Bm" drops onto "C" of first "Cristos"; from "A" drops onto "C" of second "Cristos":
 OUTPUT: Doar [Bm]Cristos. Doar [A]Cristos.
 
-Example D — many chords across a long line:
-Image shows chords D G D G D A G spaced above: "Cântăm: „Aleluia!" Viața noastră-L va lăuda,"
+Example C — vertical line drops mid-word, NO HYPHEN:
+"C#m" drops onto "ț" in "mulțumim" → insert there without hyphen
+"G#m" drops onto second "m" in "mulțumim"
+OUTPUT: [E]Veniți, [B]să Îi [C#m]mulțu[G#m]mim, veniți
+
+Example D — multiple chords, trust the vertical drop for each:
+Chords D G D A G above "Cântăm: „Aleluia!" Viața noastră-L va lăuda,"
 OUTPUT: [D]Cântăm: [G]„[D]Aleluia!" [A]Viața [G]noastră-L va lăuda,
-← "noastră-L" keeps its original hyphen because it exists in the source text
+← "noastră-L" keeps hyphen because it exists in the original image text
 
 CHORDPRO FORMAT RULES:
 1. [Chord]syllable — no space between ] and the syllable/character it precedes
@@ -64,13 +65,16 @@ IGNORE:
 - Page numbers, URLs, source attributions
 - Chord diagrams or tablature at bottom of page`
 
-const USER_PROMPT = `Analyze this song sheet carefully.
+const USER_PROMPT = `Convert this song sheet to ChordPro format.
 
-STEP 1: For each chord+lyrics pair, mentally note the horizontal position of every chord.
-STEP 2: Map each chord to the exact syllable it sits above.
-STEP 3: Output the full song in ChordPro format.
+For EACH chord+lyric pair, use the vertical drop method:
+- Drop a vertical line from the center of every chord down to the lyric
+- Note exactly which letter it lands on
+- Insert [Chord] before that letter, no hyphen, no extra space
 
-Return ONLY a valid JSON object with no markdown, no explanation, no code fences:
+Process every section (verse, chorus, bridge) in order. Include ALL verses.
+
+Return ONLY a valid JSON object, no markdown, no code fences, no explanation:
 {"title":"Song title without number prefix","defaultKey":"Key in standard notation (D, Am, F#m, etc.)","content":"Full ChordPro content as a multiline string with \\n for newlines"}`
 
 function extractJSON(text: string): { title: string; defaultKey: string; content: string } {
@@ -138,7 +142,7 @@ export async function POST(req: NextRequest) {
       model: "gemini-2.5-flash",
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
-        thinkingConfig: { thinkingBudget: 8000 },
+        thinkingConfig: { thinkingBudget: 16000 },
         temperature: 0.1,
       },
       contents: [
