@@ -27,7 +27,8 @@ body {
 }
 
 .pb-safe {
-  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  /* Adds safe area padding so nav content stays above Android/iOS gesture bar */
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
 }
 
 .font-display {

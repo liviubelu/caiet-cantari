@@ -18,7 +18,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
       {/* Content — the ONLY scroll container; prevents iOS overscroll glitches */}
       <div className="lg:pl-64 h-full overflow-y-auto overscroll-contain">
         <div className="max-w-lg mx-auto lg:max-w-none lg:mx-0">
-          <main className="pb-24 lg:pb-12">{children}</main>
+          <main className="pb-32 lg:pb-12">{children}</main>
         </div>
       </div>
 

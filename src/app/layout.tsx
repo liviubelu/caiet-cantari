@@ -19,12 +19,19 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  viewportFit: "cover", // enables env(safe-area-inset-*) on Android + iOS
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ro" className={`${inter.variable} ${lora.variable} h-full`}>
       <body className="h-full">
+        {/* Capture beforeinstallprompt before React hydrates */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window._pwaPrompt=e;});`,
+          }}
+        />
         {children}
         <SwRegister />
       </body>
