@@ -41,8 +41,9 @@ export default async function HomePage({ searchParams }: Props) {
 
   return (
     <div>
-      <div className="sticky top-0 z-40 bg-[#f0f2f5]/95 backdrop-blur-sm px-4 pt-12 pb-3">
-        <div className="flex items-center justify-between mb-4">
+      <div className="sticky top-0 z-40 bg-[#f0f2f5]/95 backdrop-blur-sm px-4 pt-12 lg:pt-6 pb-3">
+        {/* Mobile-only header row — on desktop this is in the sidebar */}
+        <div className="flex items-center justify-between mb-4 lg:hidden">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 bg-indigo-700 rounded-lg flex items-center justify-center">
               <ChurchIcon size={14} />

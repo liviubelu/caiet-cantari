@@ -43,8 +43,9 @@ export default async function FavoritePage() {
 
   return (
     <div>
-      <div className="px-4 pt-12 pb-4">
-        <div className="flex items-center justify-between mb-4">
+      <div className="px-4 pt-12 lg:pt-6 pb-4">
+        {/* Mobile-only header row */}
+        <div className="flex items-center justify-between mb-4 lg:hidden">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 bg-indigo-700 rounded-lg flex items-center justify-center">
               <ChurchIcon size={14} />
@@ -60,6 +61,8 @@ export default async function FavoritePage() {
             {initials}
           </div>
         </div>
+        {/* Desktop page title */}
+        <h1 className="hidden lg:block text-[28px] font-display font-bold text-gray-900 leading-tight mb-4">Favorite</h1>
 
         <p className="text-sm text-gray-500 italic leading-relaxed border-l-2 border-blue-400 pl-3 py-1 mb-4">
           „Voi cânta Domnului cât voi trăi, voi lăuda pe Dumnezeul meu cât voi fi." — Psalm 104:33

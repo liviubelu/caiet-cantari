@@ -21,7 +21,7 @@ export default async function EditSongPage({ params }: Props) {
 
   return (
     <div>
-      <div className="px-4 pt-12 pb-4">
+      <div className="px-4 pt-12 lg:pt-6 pb-4">
         <h1 className="text-[28px] font-display font-bold text-gray-900">Editează melodia</h1>
       </div>
       <div className="px-4">
