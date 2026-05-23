@@ -1,12 +1,13 @@
 export const dynamic = "force-dynamic"
 
-import { db } from "@/lib/db"
-import { songs, favorites } from "@/lib/schema"
+import { favorites } from "@/lib/schema"
 import { eq, and } from "drizzle-orm"
-import { auth } from "@/auth"
+import { db } from "@/lib/db"
 import { notFound } from "next/navigation"
 import { getCategoryColor } from "@/lib/categories"
 import { canEditSongs } from "@/auth"
+import { getSession } from "@/lib/session"
+import { getSongById } from "@/lib/queries"
 import Link from "next/link"
 import { SongDetailClient } from "./SongDetailClient"
 
@@ -16,26 +17,27 @@ interface Props {
 
 export async function generateMetadata({ params }: Props) {
   const { id } = await params
-  const [song] = await db.select().from(songs).where(eq(songs.id, id)).limit(1)
+  const song = await getSongById(id) // cached — no extra DB hit if page also calls it
   return { title: song?.title ?? "Melodie" }
 }
 
 export default async function SongPage({ params }: Props) {
   const { id } = await params
-  const session = await auth()
 
-  const [song] = await db.select().from(songs).where(eq(songs.id, id)).limit(1)
+  // Run session + song fetch in parallel; song uses React cache so generateMetadata shares it
+  const [session, song] = await Promise.all([getSession(), getSongById(id)])
   if (!song) notFound()
 
-  let isFavorited = false
-  if (session?.user?.id) {
-    const [fav] = await db
-      .select()
-      .from(favorites)
-      .where(and(eq(favorites.userId, session.user.id), eq(favorites.songId, id)))
-      .limit(1)
-    isFavorited = !!fav
-  }
+  // Fetch favorite status only if user is logged in
+  const [fav] = session?.user?.id
+    ? await db
+        .select()
+        .from(favorites)
+        .where(and(eq(favorites.userId, session.user.id), eq(favorites.songId, id)))
+        .limit(1)
+    : []
+
+  const isFavorited = !!fav
 
   const cat = getCategoryColor(song.category)
 

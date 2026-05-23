@@ -1,4 +1,5 @@
-export const dynamic = "force-dynamic"
+// Colecții don't change often — cache for 1 hour, revalidate in background (ISR)
+export const revalidate = 3600
 
 import { db } from "@/lib/db"
 import { songs } from "@/lib/schema"
@@ -7,7 +8,11 @@ import { CollectionCard } from "@/components/CollectionCard"
 import { CATEGORIES } from "@/lib/categories"
 
 export default async function ColectiiPage() {
-  const allSongs = await db.select().from(songs).orderBy(asc(songs.title))
+  // Select only needed columns — skip `content` (full lyrics) to reduce payload
+  const allSongs = await db
+    .select({ id: songs.id, title: songs.title, category: songs.category, defaultKey: songs.defaultKey, firstLine: songs.firstLine })
+    .from(songs)
+    .orderBy(asc(songs.title))
 
   const grouped = allSongs.reduce<Record<string, typeof allSongs>>((acc, song) => {
     const cat = song.category ?? "Altele"

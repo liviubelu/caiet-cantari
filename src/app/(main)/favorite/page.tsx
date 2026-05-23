@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic"
 
-import { auth } from "@/auth"
+import { getSession } from "@/lib/session"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import { songs, favorites } from "@/lib/schema"
@@ -11,7 +11,7 @@ import { ChurchIcon } from "@/components/ChurchIcon"
 import { CATEGORIES } from "@/lib/categories"
 
 export default async function FavoritePage() {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user?.id) redirect("/login")
 
   const rows = await db

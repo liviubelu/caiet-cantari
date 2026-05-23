@@ -1,11 +1,11 @@
 export const dynamic = "force-dynamic"
 
-import { auth } from "@/auth"
+import { getSession } from "@/lib/session"
 import { BottomNav } from "@/components/BottomNav"
 import { Sidebar } from "@/components/Sidebar"
 
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth()
+  const session = await getSession()
   const user = session?.user
     ? { name: session.user.name ?? null, role: (session.user as { role?: string }).role ?? null }
     : null

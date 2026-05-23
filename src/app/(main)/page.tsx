@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic"
 
-import { auth, canEditSongs } from "@/auth"
+import { canEditSongs } from "@/auth"
+import { getSession } from "@/lib/session"
 import { db } from "@/lib/db"
 import { songs, favorites } from "@/lib/schema"
 import { eq, asc, ilike, or } from "drizzle-orm"
@@ -13,20 +14,22 @@ interface Props {
 }
 
 export default async function HomePage({ searchParams }: Props) {
-  const session = await auth()
-  const { q } = await searchParams
+  const [session, { q }] = await Promise.all([getSession(), searchParams])
 
   let query = db.select().from(songs).orderBy(asc(songs.title)).$dynamic()
   if (q) {
     query = query.where(or(ilike(songs.title, `%${q}%`), ilike(songs.firstLine, `%${q}%`)))
   }
-  const allSongs = await query
 
-  const favSet = new Set<string>()
-  if (session?.user?.id) {
-    const favs = await db.select().from(favorites).where(eq(favorites.userId, session.user.id))
-    favs.forEach((f) => favSet.add(f.songId))
-  }
+  // Run songs query and favorites query in parallel
+  const [allSongs, favs] = await Promise.all([
+    query,
+    session?.user?.id
+      ? db.select().from(favorites).where(eq(favorites.userId, session.user.id))
+      : Promise.resolve([]),
+  ])
+
+  const favSet = new Set<string>(favs.map((f) => f.songId))
 
   const grouped = allSongs.reduce<Record<string, typeof allSongs>>((acc, song) => {
     const letter = song.title[0]?.toUpperCase() ?? "#"
