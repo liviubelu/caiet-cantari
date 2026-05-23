@@ -15,12 +15,10 @@ export default async function MainLayout({ children }: { children: React.ReactNo
       {/* Desktop sidebar — hidden on mobile */}
       <Sidebar user={user} />
 
-      {/* Content */}
+      {/* Content — mobile: centered max-w-lg, desktop: full available width after sidebar */}
       <div className="lg:pl-64 min-h-screen">
-        <div className="flex justify-center">
-          <div className="w-full max-w-lg lg:max-w-2xl">
-            <main className="pb-20 lg:pb-12">{children}</main>
-          </div>
+        <div className="max-w-lg mx-auto lg:max-w-none lg:mx-0">
+          <main className="pb-20 lg:pb-12">{children}</main>
         </div>
       </div>
 

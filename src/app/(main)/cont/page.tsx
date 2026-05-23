@@ -22,7 +22,7 @@ export default async function ContPage() {
     : "?"
 
   return (
-    <div>
+    <div className="lg:max-w-xl lg:mx-auto">
       <div className="px-4 pt-12 lg:pt-6 pb-4">
         <p className="text-[10px] font-semibold tracking-widest text-gray-400 uppercase mb-1">
           Profil

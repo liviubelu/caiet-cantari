@@ -40,7 +40,7 @@ export default async function HomePage({ searchParams }: Props) {
     : null
 
   return (
-    <div>
+    <div className="lg:max-w-2xl lg:mx-auto">
       <div className="sticky top-0 z-40 bg-[#f0f2f5]/95 backdrop-blur-sm px-4 pt-12 lg:pt-6 pb-3">
         {/* Mobile-only header row — on desktop this is in the sidebar */}
         <div className="flex items-center justify-between mb-4 lg:hidden">

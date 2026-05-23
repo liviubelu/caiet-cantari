@@ -122,7 +122,11 @@ export function SongDetailClient({ content, defaultKey, songId, isFavorited, isA
       </div>
 
       {/* Song content */}
-      <div className="px-4 py-5 lg:px-8 lg:py-7">
+      <div className={
+        twoColumns
+          ? "px-4 py-5 lg:px-10 lg:py-7"
+          : "px-4 py-5 lg:px-10 lg:py-7 lg:max-w-3xl"
+      }>
         <ChordProDisplay
           content={content}
           semitones={semitones}
