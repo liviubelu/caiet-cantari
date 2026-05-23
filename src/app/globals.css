@@ -14,11 +14,16 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+html {
+  overscroll-behavior: none;
+}
+
 body {
   background-color: #f0f2f5;
   color: #111827;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
 }
 
 .pb-safe {

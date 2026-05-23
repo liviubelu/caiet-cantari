@@ -72,9 +72,9 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: User[] }) {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "Total",          value: userList.length },
-          { label: "Verificați",     value: verified.length },
-          { label: "Instrumentiști", value: userList.filter((u) => u.role === "instrumentist").length },
+          { label: "Total",      value: userList.length },
+          { label: "Verificați", value: verified.length },
+          { label: "Instrum.",   value: userList.filter((u) => u.role === "instrumentist").length },
         ].map((s) => (
           <div key={s.label} className="bg-white rounded-xl p-4 text-center border border-gray-100">
             <p className="text-2xl font-bold text-gray-900">{s.value}</p>
