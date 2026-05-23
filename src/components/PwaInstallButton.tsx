@@ -7,7 +7,7 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>
 }
 
-type State = "loading" | "can-install" | "ios" | "installed" | "unsupported"
+type State = "loading" | "can-install" | "ios" | "installed" | "browser-help"
 
 declare global {
   interface Window {
@@ -15,17 +15,78 @@ declare global {
   }
 }
 
+function detectBrowser(): "chrome" | "edge" | "opera" | "safari" | "firefox" | "other" {
+  if (typeof navigator === "undefined") return "other"
+  const ua = navigator.userAgent
+  if (/OPR|Opera/i.test(ua)) return "opera"
+  if (/Edg\//i.test(ua)) return "edge"
+  if (/Chrome/i.test(ua)) return "chrome"
+  if (/Firefox/i.test(ua)) return "firefox"
+  if (/Safari/i.test(ua)) return "safari"
+  return "other"
+}
+
+const BROWSER_INSTRUCTIONS: Record<string, { name: string; steps: string[] }> = {
+  opera: {
+    name: "Opera / Opera GX",
+    steps: [
+      'Click pe iconița meniului (≡) din colțul din dreapta sus',
+      'Caută opțiunea "Instalează [Caiet de Cântări]"',
+      "Confirmă instalarea",
+    ],
+  },
+  edge: {
+    name: "Microsoft Edge",
+    steps: [
+      'Caută iconița de instalare (⊕) în bara de adresă, colțul din dreapta',
+      'Sau: Meniu (···) → "Aplicații" → "Instalează acest site ca aplicație"',
+      "Confirmă instalarea",
+    ],
+  },
+  chrome: {
+    name: "Google Chrome",
+    steps: [
+      'Caută iconița de instalare (⊕) în bara de adresă, colțul din dreapta',
+      'Sau: Meniu (⋮) → "Salvează și partajează" → "Instalează ca aplicație"',
+      "Confirmă instalarea",
+    ],
+  },
+  firefox: {
+    name: "Firefox",
+    steps: [
+      "Firefox nu suportă instalarea PWA ca aplicație nativă",
+      "Recomandare: folosește Chrome, Edge sau Opera GX",
+    ],
+  },
+  safari: {
+    name: "Safari (macOS)",
+    steps: [
+      'Din bara de meniu: "Dosar" (File) → "Adaugă în Dock"',
+      "Sau: butonul Share → \"Adaugă în Dock\"",
+    ],
+  },
+  other: {
+    name: "Browserul tău",
+    steps: [
+      "Caută iconița de instalare (⊕) în bara de adresă",
+      'Sau deschide meniul browserului și caută "Instalează aplicația"',
+    ],
+  },
+}
+
 export function PwaInstallButton({ className = "" }: { className?: string }) {
   const [state, setState] = useState<State>("loading")
   const [prompt, setPrompt] = useState<BeforeInstallPromptEvent | null>(null)
-  const [showIosModal, setShowIosModal] = useState(false)
+  const [showModal, setShowModal] = useState(false)
+  const [browser, setBrowser] = useState<string>("other")
 
   useEffect(() => {
+    setBrowser(detectBrowser())
+
     // Already running as installed PWA
     const isStandalone =
       window.matchMedia("(display-mode: standalone)").matches ||
       ("standalone" in navigator && (navigator as { standalone?: boolean }).standalone === true)
-
     if (isStandalone) {
       setState("installed")
       return
@@ -47,7 +108,7 @@ export function PwaInstallButton({ className = "" }: { className?: string }) {
       return
     }
 
-    // Otherwise listen for it (fires on first visit or after criteria met)
+    // Listen for it
     const handler = (e: Event) => {
       e.preventDefault()
       const promptEvent = e as BeforeInstallPromptEvent
@@ -63,10 +124,10 @@ export function PwaInstallButton({ className = "" }: { className?: string }) {
     }
     window.addEventListener("appinstalled", installedHandler)
 
-    // If the event doesn't fire in 5s, browser likely doesn't support install
+    // After 4s without beforeinstallprompt, show browser-specific help
     const timeout = setTimeout(() => {
-      setState((prev) => (prev === "loading" ? "unsupported" : prev))
-    }, 5000)
+      setState((prev) => (prev === "loading" ? "browser-help" : prev))
+    }, 4000)
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handler)
@@ -76,8 +137,8 @@ export function PwaInstallButton({ className = "" }: { className?: string }) {
   }, [])
 
   async function handleInstall() {
-    if (state === "ios") {
-      setShowIosModal(true)
+    if (state === "ios" || state === "browser-help") {
+      setShowModal(true)
       return
     }
     if (!prompt) return
@@ -87,6 +148,8 @@ export function PwaInstallButton({ className = "" }: { className?: string }) {
     setPrompt(null)
     window._pwaPrompt = undefined
   }
+
+  const info = BROWSER_INSTRUCTIONS[browser] ?? BROWSER_INSTRUCTIONS.other
 
   if (state === "installed") {
     return (
@@ -99,30 +162,46 @@ export function PwaInstallButton({ className = "" }: { className?: string }) {
     )
   }
 
-  if (state === "loading" || state === "unsupported") return null
+  if (state === "loading") return null
+
+  const isIosOrHelp = state === "ios" || state === "browser-help"
 
   return (
     <>
       <button onClick={handleInstall} className={`flex items-center gap-2 ${className}`}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-          <path d="M12 15V3M8 7l4-4 4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M5 15v4a1 1 0 001 1h12a1 1 0 001-1v-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-        {state === "ios" ? "Instalează pe iPhone/iPad" : "Instalează aplicația"}
+        {isIosOrHelp ? (
+          /* Question/help icon for manual install */
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+            <path d="M9.5 9.5a2.5 2.5 0 015 0c0 1.5-1.5 2-2.5 2.5V13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <circle cx="12" cy="16.5" r="1" fill="currentColor" />
+          </svg>
+        ) : (
+          /* Download icon */
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M12 15V3M8 7l4-4 4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M5 15v4a1 1 0 001 1h12a1 1 0 001-1v-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        )}
+        {state === "ios"
+          ? "Instalează pe iPhone/iPad"
+          : state === "browser-help"
+          ? "Cum instalez?"
+          : "Instalează aplicația"}
       </button>
 
-      {/* iOS instructions modal */}
-      {showIosModal && (
+      {/* Instructions modal (iOS + browser-help) */}
+      {showModal && (
         <div
           className="fixed inset-0 z-[999] flex items-end justify-center bg-black/50 backdrop-blur-sm"
-          onClick={() => setShowIosModal(false)}
+          onClick={() => setShowModal(false)}
         >
           <div
             className="bg-white rounded-t-3xl p-6 w-full max-w-sm"
             style={{ paddingBottom: "max(24px, env(safe-area-inset-bottom))" }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* App header */}
+            {/* Header */}
             <div className="flex items-center gap-3 mb-5">
               <div className="w-12 h-12 bg-indigo-700 rounded-2xl flex items-center justify-center flex-shrink-0">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -132,69 +211,39 @@ export function PwaInstallButton({ className = "" }: { className?: string }) {
               </div>
               <div>
                 <p className="font-bold text-gray-900">Caiet de Cântări</p>
-                <p className="text-xs text-gray-400">tineri-bartolomeu.com</p>
+                <p className="text-xs text-gray-400">
+                  {state === "ios" ? "iPhone / iPad" : info.name}
+                </p>
               </div>
             </div>
 
             <p className="text-sm font-semibold text-gray-700 mb-4">
-              Adaugă pe ecranul principal:
+              {state === "ios" ? "Adaugă pe ecranul principal:" : "Instalează aplicația:"}
             </p>
 
             <div className="space-y-4">
-              {/* Step 1 */}
-              <div className="flex items-start gap-3">
-                <span className="w-7 h-7 bg-indigo-50 text-indigo-700 rounded-full text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
-                  1
-                </span>
-                <p className="text-sm text-gray-700">
-                  Apasă butonul{" "}
-                  <strong className="inline-flex items-center gap-1">
-                    Share
-                    {/* Correct iOS Share icon: box with arrow pointing up */}
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="inline-block">
-                      <path
-                        d="M12 15V4M8 8l4-4 4 4"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M4 14v6a1 1 0 001 1h14a1 1 0 001-1v-6"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  </strong>{" "}
-                  din bara de jos a Safari
-                </p>
-              </div>
-
-              {/* Step 2 */}
-              <div className="flex items-start gap-3">
-                <span className="w-7 h-7 bg-indigo-50 text-indigo-700 rounded-full text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
-                  2
-                </span>
-                <p className="text-sm text-gray-700">
-                  Derulează și apasă{" "}
-                  <strong>&ldquo;Adaugă pe ecranul principal&rdquo;</strong>
-                </p>
-              </div>
-
-              {/* Step 3 */}
-              <div className="flex items-start gap-3">
-                <span className="w-7 h-7 bg-indigo-50 text-indigo-700 rounded-full text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
-                  3
-                </span>
-                <p className="text-sm text-gray-700">
-                  Apasă <strong>&ldquo;Adaugă&rdquo;</strong> în colțul din dreapta sus
-                </p>
-              </div>
+              {(state === "ios"
+                ? [
+                    "Apasă butonul Share din bara de jos a Safari",
+                    'Derulează și apasă "Adaugă pe ecranul principal"',
+                    'Apasă "Adaugă" în colțul din dreapta sus',
+                  ]
+                : info.steps
+              ).map((step, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <span className="w-7 h-7 bg-indigo-50 text-indigo-700 rounded-full text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                    {i + 1}
+                  </span>
+                  <p
+                    className="text-sm text-gray-700"
+                    dangerouslySetInnerHTML={{ __html: step }}
+                  />
+                </div>
+              ))}
             </div>
 
             <button
-              onClick={() => setShowIosModal(false)}
+              onClick={() => setShowModal(false)}
               className="mt-6 w-full bg-indigo-700 text-white py-3 rounded-2xl font-semibold text-sm hover:bg-indigo-600 transition"
             >
               Am înțeles
