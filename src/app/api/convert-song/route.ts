@@ -65,16 +65,23 @@ IGNORE:
 - Page numbers, URLs, source attributions
 - Chord diagrams or tablature at bottom of page`
 
-const USER_PROMPT = `Convert this song sheet to ChordPro format.
+const USER_PROMPT = `Convert this song sheet to ChordPro format. Take as much time as you need — accuracy matters more than speed.
 
-For EACH chord+lyric pair, use the vertical drop method:
-- Drop a vertical line from the center of every chord down to the lyric
-- Note exactly which letter it lands on
-- Insert [Chord] before that letter, no hyphen, no extra space
+For EVERY chord+lyric pair:
+1. IDENTIFY: List every chord name you see above that lyric line, in left-to-right order
+2. DROP: For each chord, drop a vertical line from its center to the lyric — note exactly which letter it hits
+3. VERIFY: Double-check each placement — does the chord land on the right syllable compared to the image?
+4. WRITE: Insert [Chord] at that letter, no hyphen, no space between ] and the letter
 
-Process every section (verse, chorus, bridge) in order. Include ALL verses.
+Rules:
+- NEVER invent chords not visible in the image
+- NEVER skip chords that are in the image
+- NEVER add hyphens to words
+- Each [Chord] belongs to exactly one letter position
 
-Return ONLY a valid JSON object, no markdown, no code fences, no explanation:
+Process every section in order. Include ALL verses (even if chorus repeats).
+
+Return ONLY a valid JSON object, no markdown, no code fences:
 {"title":"Song title without number prefix","defaultKey":"Key in standard notation (D, Am, F#m, etc.)","content":"Full ChordPro content as a multiline string with \\n for newlines"}`
 
 function extractJSON(text: string): { title: string; defaultKey: string; content: string } {
@@ -142,8 +149,8 @@ export async function POST(req: NextRequest) {
       model: "gemini-2.5-flash",
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
-        thinkingConfig: { thinkingBudget: 16000 },
-        temperature: 0.1,
+        thinkingConfig: { thinkingBudget: 24576 },
+        temperature: 0,
       },
       contents: [
         {
