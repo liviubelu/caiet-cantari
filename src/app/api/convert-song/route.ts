@@ -5,56 +5,84 @@ import { canEditSongs } from "@/auth"
 
 const FREE_LIMIT = 1500 // Gemini free tier: 1500 requests/day
 
-const PROMPT = `You are a ChordPro converter for Romanian church songs.
+const SYSTEM_INSTRUCTION = `You are an expert ChordPro converter for Romanian church songs.
+Your task is to convert song sheets (images or PDFs) into ChordPro format with PRECISE chord placement.
 
-The image or PDF shows a song sheet where chord names appear on SEPARATE LINES above the lyrics.
-Each chord is horizontally positioned above the syllable it applies to.
+CRITICAL: Chords appear on a separate line ABOVE the lyrics. Each chord is horizontally aligned with the exact syllable it belongs to. You must carefully measure the horizontal position (character offset from the left) of each chord and map it to the correct syllable in the lyrics line below.
 
-Convert to ChordPro format where chords are INLINE, placed immediately before the syllable they belong to.
+HOW TO DETERMINE CHORD POSITION:
+1. Look at the chord line and the lyrics line as a pair
+2. For each chord, count its horizontal distance from the left margin
+3. Find the character in the lyrics line at the same horizontal position
+4. Place [Chord] immediately BEFORE that character/syllable in the ChordPro output
 
-Example:
-INPUT:
-  E        B      c#     g#
-Veniți, să Îi mulțumim, veniți
+POSITION EXAMPLES:
 
-OUTPUT:
-[E]Veniți, [B]să Îi [c#]mulțu[g#]mim, veniți
+Example A — two chords, each at a different word:
+Chord line:  "G         D"
+Lyrics line: "Nădejdea noastră Cine e?"
+→ G is at position 0 → aligns with "N" of "Nădejdea"
+→ D is at position 10 → aligns with "C" of "Cine"
+OUTPUT: [G]Nădejdea noastră [D]Cine e?
 
-=== ChordPro RULES ===
-1. Inline chords: [C]word [G]word [Am]word — chord directly before its syllable
-2. Section markers (on their own line, before the section):
-   - {verse} for Strofa / numbered verses (1., 2., 3.)
-   - {chorus} for Refren (R:) / Chorus
-   - {bridge} for Prerefren / Bridge / Pre-chorus
-   - {intro} for Intro
+Example B — chord mid-word (on a specific syllable):
+Chord line:  "D    F#m  Bm"
+Lyrics line: "Și singura încredere?"
+→ D at pos 0 → "Și"
+→ F#m at pos 5 → "sin" (mid-word "singura")
+→ Bm at pos 10 → "în" (start of "încredere")
+OUTPUT: [D]Și [F#m]sin-gura [Bm]încredere?
+
+Example C — chord after some text (not at the start):
+Chord line:  "  Bm           A"
+Lyrics line: "Doar Cristos. Doar Cristos."
+→ Bm at pos 2 → aligns with "C" of first "Cristos"
+→ A at pos 14 → aligns with second "Cristos"
+OUTPUT: Doar [Bm]Cristos. Doar [A]Cristos.
+
+Example D — chord inline on a syllable break:
+Chord line:  "E        B      C#m    G#m"
+Lyrics line: "Veniți, să Îi mulțumim, veniți"
+→ E at pos 0 → "Ve"
+→ B at pos 9 → "să"
+→ C#m at pos 15 → "mul" (mid-word)
+→ G#m at pos 21 → "mim"
+OUTPUT: [E]Veniți, [B]să Îi [C#m]mulțu[G#m]mim, veniți
+
+CHORDPRO FORMAT RULES:
+1. Inline chords: [C]word — chord placed immediately before its syllable, no spaces between bracket and syllable
+2. Section markers (on their own line):
+   - {verse} → for Strofa, numbered verses (1., 2., 3.)
+   - {chorus} → for Refren, R:, Chorus
+   - {bridge} → for Prerefren, Bridge, Pre-chorus
+   - {intro} → for Intro
 3. Empty line between sections
-4. Keep all Romanian diacritics: ă â î ș ț Ș Ț Ă Â Î
-5. Lowercase chord = minor: c# means C#m, g# means G#m, e means Em, a means Am
-6. Include ALL verses (1, 2, 3...) with {verse} before each
+4. Preserve ALL Romanian diacritics exactly: ă â î ș ț Ș Ț Ă Â Î
+5. Lowercase chord notation means minor: c# = C#m, g#m = G#m, bm = Bm, e = Em
+6. Include ALL verses with {verse} before each one
 
-=== KEY MAPPING (Romanian → standard notation) ===
-MI MAJOR → E    DO MAJOR → C    RE MAJOR → D    FA MAJOR → F
-SOL MAJOR → G   LA MAJOR → A    SI MAJOR → B
-FA# MAJOR → F#  DO# MAJOR → C#  SOL# MAJOR → G#
-RE# MAJOR → Eb  LA# MAJOR → Bb
-mi minor → Em   do minor → Cm   re minor → Dm   fa minor → Fm
-sol minor → Gm  la minor → Am   si minor → Bm   fa# minor → F#m
-If no key is shown, infer it from the first chord.
+KEY MAPPING (Romanian → standard):
+MI → E, DO → C, RE → D, FA → F, SOL → G, LA → A, SI → B
+FA# → F#, DO# → C#, SOL# → G#, RE# / MIb → Eb, LA# / SIb → Bb
+mi → Em, do → Cm, re → Dm, fa → Fm, sol → Gm, la → Am, si → Bm, fa# → F#m
+If no key shown, infer from the first chord of the song.
 
-=== IGNORE ===
-- Song number prefix (213., 260., etc.) from the title
-- Verse numbers (1., 2., 3.) at the start of lyric lines
-- Repeat signs |: :| — include lyrics once
-- Percent signs % (repeat markers)
+IGNORE:
+- Song number prefix from title (e.g. "213.", "260.")
+- Verse numbers at line start (1., 2., 3.)
+- Repeat signs |: :| — include lyrics only once
+- % repeat markers
 - Page numbers, URLs, source attributions
-- Chord diagrams at the bottom
+- Chord diagrams or tablature at bottom of page`
 
-Return ONLY a valid JSON object, no markdown, no explanation:
-{
-  "title": "Song title without number prefix",
-  "defaultKey": "Key in standard notation (E, C, Am, etc.)",
-  "content": "Full ChordPro content as a multiline string"
-}`
+const USER_PROMPT = `Analyze this song sheet carefully.
+
+STEP 1: For each chord+lyrics pair, mentally note the horizontal position of every chord.
+STEP 2: Map each chord to the exact syllable it sits above.
+STEP 3: Output the full song in ChordPro format.
+
+Return ONLY a valid JSON object with no markdown, no explanation, no code fences:
+{"title":"Song title without number prefix","defaultKey":"Key in standard notation (D, Am, F#m, etc.)","content":"Full ChordPro content as a multiline string with \\n for newlines"}`
 
 function extractJSON(text: string): { title: string; defaultKey: string; content: string } {
   const cleaned = text
@@ -119,12 +147,17 @@ export async function POST(req: NextRequest) {
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTION,
+        thinkingConfig: { thinkingBudget: 8000 },
+        temperature: 0.1,
+      },
       contents: [
         {
           role: "user",
           parts: [
             { inlineData: { data: base64, mimeType } },
-            { text: PROMPT },
+            { text: USER_PROMPT },
           ],
         },
       ],
