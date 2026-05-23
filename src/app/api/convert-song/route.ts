@@ -8,50 +8,35 @@ const FREE_LIMIT = 1500 // Gemini free tier: 1500 requests/day
 const SYSTEM_INSTRUCTION = `You are an expert ChordPro converter for Romanian church songs.
 Your task is to convert song sheets (images or PDFs) into ChordPro format with PRECISE chord placement.
 
-CRITICAL RULE — NEVER ADD HYPHENS: Do NOT add hyphens or dashes to any word in the lyrics. If you see "singura" in the original, output "singura" — never "sin-gura". ChordPro allows chords mid-word WITHOUT hyphens: just insert [Chord] at that exact character. Hyphens in ChordPro output are FORBIDDEN unless they already exist in the original lyrics.
+CRITICAL RULE — NEVER ADD HYPHENS: Do NOT add hyphens or dashes to any word in the lyrics. If you see "singura" write "singura", never "sin-gura". ChordPro places chords mid-word WITHOUT hyphens. Hyphens are FORBIDDEN unless they already exist in the original text.
 
-HOW TO MAP CHORD POSITIONS:
-1. Treat each (chord line, lyrics line) pair together
-2. For each chord name, measure its horizontal distance from the left margin (count character positions)
-3. Find the character in the lyrics at the same horizontal offset
-4. Insert [Chord] immediately BEFORE that character — no space between ] and the character
+HOW TO MAP CHORD POSITIONS — USE YOUR VISION:
+You are a vision model. You can SEE the image. For each chord+lyrics pair:
+1. Look at the chord symbol in the image and note its visual horizontal center (pixel x position)
+2. Look at the lyrics line directly below and find the letter/syllable at that same pixel x position
+3. Insert [Chord] immediately BEFORE that letter — no space between ] and the letter
 
-POSITION EXAMPLES:
+You do NOT need to count characters. Use your visual perception: the chord "D" printed above the letter "C" in "Cine" means [D] goes before "C". Trust what you see in the image.
 
-Example A — chords at word starts:
-Chord line:  "G             D"
-Lyrics line: "Nădejdea noastră Cine e?"
-→ G at col 0 → before "N" of "Nădejdea"
-→ D at col 14 → before "C" of "Cine"
+VISUAL EXAMPLES:
+
+Example A — chord visually above a word start:
+Image shows:  "G" printed above "N" of "Nădejdea", "D" printed above "C" of "Cine"
 OUTPUT: [G]Nădejdea noastră [D]Cine e?
 
-Example B — chord NOT at word start (before a word after leading text):
-Chord line:  "   Bm              A"
-Lyrics line: "Doar Cristos. Doar Cristos."
-→ Bm at col 5 → before "C" of first "Cristos"
-→ A at col 19 → before "C" of second "Cristos"
+Example B — chord visually above middle of a word, NO HYPHEN:
+Image shows: "C#m" printed above the "ț" in "mulțumim", "G#m" above the second "m" ("mim")
+OUTPUT: [E]Veniți, [B]să Îi [C#m]mulțu[G#m]mim, veniți
+← "mulțumim" is written without any hyphen. The chord is simply inserted at that letter.
+
+Example C — chord visually above a word that follows other text:
+Image shows: "Bm" above "C" of first "Cristos", "A" above "C" of second "Cristos"
 OUTPUT: Doar [Bm]Cristos. Doar [A]Cristos.
 
-Example C — chord mid-word, NO HYPHEN:
-Chord line:  "E          B        C#m      G#m"
-Lyrics line: "Veniți, să Îi mulțumim, veniți"
-→ E at col 0 → before "V" → [E]Veniți
-→ B at col 11 → before "s" of "să"
-→ C#m at col 17 → before "ț" of "mulțumim" (mid-word, NO hyphen!)
-→ G#m at col 23 → before "m" of "mim" (mid-word, NO hyphen!)
-OUTPUT: [E]Veniți, [B]să Îi [C#m]mulțu[G#m]mim, veniți
-← Notice: "mulțumim" is split as mulțu+mim with chords inserted, ZERO hyphens added
-
-Example D — multiple chords, mixed positions:
-Chord line:  "D    G    D    A    G"
-Lyrics line: "Cântăm: „Aleluia!" Viața noastră-L va lăuda,"
-→ D at col 0 → before "C"
-→ G at col 5 → before "„"
-→ D at col 10 → before second part
-→ A at col 15 → before "V"
-→ G at col 21 → before "noastră"
+Example D — many chords across a long line:
+Image shows chords D G D G D A G spaced above: "Cântăm: „Aleluia!" Viața noastră-L va lăuda,"
 OUTPUT: [D]Cântăm: [G]„[D]Aleluia!" [A]Viața [G]noastră-L va lăuda,
-← Note: "noastră-L" already has a hyphen in the original — that is kept as-is
+← "noastră-L" keeps its original hyphen because it exists in the source text
 
 CHORDPRO FORMAT RULES:
 1. [Chord]syllable — no space between ] and the syllable/character it precedes
