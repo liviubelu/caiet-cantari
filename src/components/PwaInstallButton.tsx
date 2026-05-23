@@ -30,9 +30,9 @@ const BROWSER_INSTRUCTIONS: Record<string, { name: string; steps: string[] }> = 
   opera: {
     name: "Opera / Opera GX",
     steps: [
-      'Click pe iconița meniului (≡) din colțul din dreapta sus',
-      'Caută opțiunea "Instalează [Caiet de Cântări]"',
-      "Confirmă instalarea",
+      'Uită-te în bara de adresă — în dreapta apare o iconiță de instalare (monitor cu săgeată ⬇)',
+      'Click pe ea și alege "Instalează"',
+      'Dacă nu o vezi: meniu Opera (O logo, stânga sus) → "Instalează Caiet de Cântări"',
     ],
   },
   edge: {
