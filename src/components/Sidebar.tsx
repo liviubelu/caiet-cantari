@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { ChurchIcon } from "@/components/ChurchIcon"
+import { PwaInstallButton } from "@/components/PwaInstallButton"
 
 export type SidebarUser = {
   name?: string | null
@@ -134,6 +135,11 @@ export function Sidebar({ user }: { user: SidebarUser | null }) {
           </Link>
         )}
       </nav>
+
+      {/* Install button */}
+      <div className="px-4 pb-3">
+        <PwaInstallButton className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-dashed border-gray-200 text-xs font-semibold text-gray-500 hover:border-indigo-300 hover:text-indigo-600 transition" />
+      </div>
 
       {/* User section */}
       <div className="px-3 py-4 border-t border-gray-100">

@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { SignOutButton } from "./SignOutButton"
+import { PwaInstallButton } from "@/components/PwaInstallButton"
 import Link from "next/link"
 
 const ROLE_LABELS: Record<string, string> = {
@@ -69,6 +70,17 @@ export default async function ContPage() {
             </svg>
           </Link>
         )}
+
+        {/* PWA Install */}
+        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+          <div className="px-4 py-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Instalează aplicația</p>
+              <p className="text-xs text-gray-400 mt-0.5">Acces rapid de pe ecranul principal</p>
+            </div>
+            <PwaInstallButton className="bg-indigo-700 text-white text-xs font-semibold px-3 py-2 rounded-xl hover:bg-indigo-600 transition" />
+          </div>
+        </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
           <div className="px-4 py-3.5 border-b border-gray-50">
