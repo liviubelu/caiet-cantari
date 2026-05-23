@@ -1,11 +1,36 @@
 "use client"
 
-import { useState, useRef, useCallback } from "react"
+import { useState, useRef, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { ChordProDisplay } from "./ChordProDisplay"
 import { CATEGORIES } from "@/lib/categories"
 import { NOTES } from "@/lib/transpose"
 import { DIATONIC, SECTIONS } from "@/lib/diatonic"
+
+// ── Gemini usage tracking (localStorage, resets daily) ──────────────────────
+const USAGE_KEY = "gemini_usage"
+const FREE_LIMIT = 1500
+
+interface UsageData { date: string; count: number }
+
+function getToday() { return new Date().toISOString().split("T")[0] }
+
+function readUsage(): UsageData {
+  if (typeof window === "undefined") return { date: getToday(), count: 0 }
+  try {
+    const raw = localStorage.getItem(USAGE_KEY)
+    if (!raw) return { date: getToday(), count: 0 }
+    const d = JSON.parse(raw) as UsageData
+    return d.date === getToday() ? d : { date: getToday(), count: 0 }
+  } catch { return { date: getToday(), count: 0 } }
+}
+
+function incrementUsage() {
+  const d = readUsage()
+  const next = { date: getToday(), count: d.count + 1 }
+  localStorage.setItem(USAGE_KEY, JSON.stringify(next))
+  return next.count
+}
 
 interface Props {
   songId?: string
@@ -28,6 +53,7 @@ const PLACEHOLDER = `{verse}
 export function SongForm({ songId, initialValues }: Props) {
   const router = useRouter()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [title, setTitle] = useState(initialValues?.title ?? "")
   const [content, setContent] = useState(initialValues?.content ?? "")
@@ -35,6 +61,16 @@ export function SongForm({ songId, initialValues }: Props) {
   const [defaultKey, setDefaultKey] = useState(initialValues?.defaultKey ?? "")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+
+  // Import state
+  const [importing, setImporting] = useState(false)
+  const [importError, setImportError] = useState("")
+  const [importSuccess, setImportSuccess] = useState(false)
+  const [usageCount, setUsageCount] = useState(0)
+
+  useEffect(() => {
+    setUsageCount(readUsage().count)
+  }, [])
 
   const diatonicChords = DIATONIC[defaultKey] ?? []
 
@@ -68,6 +104,44 @@ export function SongForm({ songId, initialValues }: Props) {
     insertAtCursor(`${prefix}{${tag}}\n`)
   }, [content, insertAtCursor])
 
+  async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    // Reset file input so same file can be re-selected
+    e.target.value = ""
+
+    if (usageCount >= FREE_LIMIT) {
+      setImportError(`Limita gratuită de ${FREE_LIMIT} conversii/zi a fost atinsă. Încearcă mâine.`)
+      return
+    }
+
+    setImporting(true)
+    setImportError("")
+    setImportSuccess(false)
+
+    const fd = new FormData()
+    fd.append("file", file)
+
+    const res = await fetch("/api/convert-song", { method: "POST", body: fd })
+    const data = await res.json()
+    setImporting(false)
+
+    if (!res.ok) {
+      setImportError(data.error ?? "Eroare la conversie.")
+      return
+    }
+
+    // Fill in the form fields
+    if (data.title) setTitle(data.title)
+    if (data.defaultKey) setDefaultKey(data.defaultKey)
+    if (data.content) setContent(data.content)
+
+    const newCount = incrementUsage()
+    setUsageCount(newCount)
+    setImportSuccess(true)
+    setTimeout(() => setImportSuccess(false), 4000)
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError("")
@@ -97,8 +171,99 @@ export function SongForm({ songId, initialValues }: Props) {
     router.refresh()
   }
 
+  // Usage warning level
+  const usagePct = usageCount / FREE_LIMIT
+  const usageWarning = usagePct >= 0.97 ? "danger" : usagePct >= 0.80 ? "warn" : "ok"
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4 pb-8">
+
+      {/* ── Import din imagine / PDF ── */}
+      <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-indigo-900">Importă din imagine sau PDF</p>
+            <p className="text-xs text-indigo-500 mt-0.5">
+              Titlul, tonalitatea și versurile se completează automat cu AI
+            </p>
+          </div>
+          <button
+            type="button"
+            disabled={importing || usageCount >= FREE_LIMIT}
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-2 px-3 py-2 bg-indigo-700 text-white text-xs font-semibold rounded-xl hover:bg-indigo-600 transition disabled:opacity-50 flex-shrink-0"
+          >
+            {importing ? (
+              <>
+                <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="31 11" />
+                </svg>
+                Se convertește…
+              </>
+            ) : (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Alege fișier
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,application/pdf"
+          className="hidden"
+          onChange={handleImport}
+        />
+
+        {/* Success */}
+        {importSuccess && (
+          <div className="mt-3 flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-100 rounded-xl px-3 py-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Conversie reușită! Verifică și completează câmpurile de mai jos.
+          </div>
+        )}
+
+        {/* Error */}
+        {importError && (
+          <div className="mt-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
+            {importError}
+          </div>
+        )}
+
+        {/* Usage counter */}
+        <div className="mt-3 flex items-center justify-between">
+          <span className={`text-[11px] font-medium ${
+            usageWarning === "danger" ? "text-red-600" :
+            usageWarning === "warn"   ? "text-amber-600" :
+                                        "text-indigo-400"
+          }`}>
+            {usageWarning === "danger" && "🚨 "}
+            {usageWarning === "warn"   && "⚠️ "}
+            {usageCount}/{FREE_LIMIT} conversii gratuite azi
+          </span>
+          <span className="text-[10px] text-indigo-300">Resetare la miezul nopții</span>
+        </div>
+
+        {/* Progress bar */}
+        <div className="mt-1.5 h-1 bg-indigo-100 rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all ${
+              usageWarning === "danger" ? "bg-red-500" :
+              usageWarning === "warn"   ? "bg-amber-500" :
+                                          "bg-indigo-400"
+            }`}
+            style={{ width: `${Math.min(100, usagePct * 100)}%` }}
+          />
+        </div>
+      </div>
+
       {/* Titlu */}
       <div>
         <label className="block text-[11px] font-semibold tracking-widest text-gray-500 uppercase mb-1.5">
