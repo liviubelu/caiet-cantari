@@ -5,97 +5,66 @@ import { canEditSongs } from "@/auth"
 
 export const maxDuration = 120 // seconds — requires Vercel Pro; Hobby is capped at 60s
 
-// Each song = 1 (section detect) + N (sections) calls, typically 5-7 total
-const FREE_LIMIT = 200 // conservative: 1500 API calls / ~7 calls per song
+const FREE_LIMIT = 25 // Gemini 2.5 Pro free tier: 25 RPD
 
-// ─── Types ──────────────────────────────────────────────────────────────────
-interface SectionInfo {
-  type: "verse" | "chorus" | "bridge" | "intro" | "coda" | "pre-chorus" | "outro"
-  order: number            // 1, 2, 3 … (which verse/chorus number)
-  topPct: number           // 0–100: vertical start % of image
-  bottomPct: number        // 0–100: vertical end % of image
-  leftPct: number          // 0–100: horizontal start % (for 2-column layouts)
-  rightPct: number         // 0–100: horizontal end %
-  firstWords: string       // first 3 words of lyrics (anchor)
-  lastWords: string        // last 3 words of lyrics (anchor)
-}
+// ─── Prompt ──────────────────────────────────────────────────────────────────
+const SYSTEM_PROMPT = `You are a precise ChordPro converter for Romanian church songs.
+You analyze song sheet images and output the complete song in ChordPro format.`
 
-// ─── Step 1: Section detection ───────────────────────────────────────────────
-const STEP1_SYSTEM = `You are a music sheet layout analyzer.
-Your only job is to identify the sections of a Romanian church song and their visual positions in the image.`
+const MAIN_PROMPT = `Convert this Romanian church song sheet image to ChordPro format.
 
-const STEP1_PROMPT = `Analyze the layout of this song sheet image.
+━━━ CHORD PLACEMENT — VERTICAL DROP METHOD ━━━
+For every chord symbol above a lyric line:
+1. Find the CENTER of the chord name horizontally
+2. Drop a vertical line straight down to the lyric line
+3. The letter that line touches = where you insert [Chord]
+4. Place [Chord] immediately BEFORE that letter — no space between ] and the letter
 
-Identify every section: verses (strofe), choruses (refrene), bridges, intros, codas.
+✓ CORRECT: mul[C#m]țumim   (chord lands on ț, inserted before it, no hyphen)
+✗ WRONG:   mul-[C#m]țumim  (NEVER add hyphens)
+✗ WRONG:   [C#m]mulțumim   (chord not at the right position)
 
-For each section return:
-- type: "verse" | "chorus" | "bridge" | "intro" | "coda" | "pre-chorus" | "outro"
-- order: which number (1st verse = 1, 2nd verse = 2, etc.; all choruses share order 1)
-- topPct / bottomPct: vertical position as % of total image height (0 = top, 100 = bottom)
-- leftPct / rightPct: horizontal position as % of total image width (0 = left, 100 = right)
-  → If the song has a SINGLE COLUMN: leftPct=0, rightPct=100 for all
-  → If the song has TWO COLUMNS: left column sections have rightPct≈50, right column sections have leftPct≈50
-- firstWords: exact first 3 words of the lyrics in this section
-- lastWords: exact last 3 words of the lyrics in this section
+━━━ STRICT RULES ━━━
+- NEVER split words with hyphens for chord placement
+- Preserve ALL Romanian diacritics exactly: ă â î ș ț Ș Ț Ă Â Î
+- If a chord falls between two words, place it at the start of the next word
+- Keep all original punctuation and spacing
 
-Return sections in MUSICAL ORDER (the order a singer would perform them):
-  verse 1 → chorus → verse 2 → chorus → verse 3 → chorus → coda, etc.
-Do NOT return them in page-layout order (left column top-to-bottom, right column top-to-bottom).
+━━━ LAYOUT HANDLING ━━━
+- Single column: process top to bottom
+- Two columns: identify left and right column sections, then return them in MUSICAL ORDER
+  (e.g. verse 1 left column → chorus right column → verse 2 left column → ...)
+  NOT in page order (left column top-to-bottom, then right column top-to-bottom)
 
-Return ONLY a valid JSON array, no markdown, no explanation:
-[{"type":"verse","order":1,"topPct":5,"bottomPct":38,"leftPct":0,"rightPct":50,"firstWords":"Nădejdea noastră Cine","lastWords":"toată dragostea"},...]
+━━━ OUTPUT FORMAT ━━━
+Use these section markers (no label after the marker, chords start on next line):
+  {verse}    — for verses (strofe)
+  {chorus}   — for choruses (refrene)
+  {bridge}   — for bridges
+  {intro}    — for intros
+  {coda}     — for codas / outros
 
-Also include outside the array on a new line:
-TITLE: [song title without number prefix]
-KEY: [main key in standard notation, e.g. D, Am, F#m]`
+Blank line between sections. No markdown, no explanation, no JSON.
 
-// ─── Step 2: Per-section chord analysis ──────────────────────────────────────
-const STEP2_SYSTEM = `You are a precise ChordPro converter for Romanian church songs.
-You analyze ONE specific section of a song sheet and convert it to ChordPro format.`
+After the ChordPro content add two lines:
+TITLE: [song title, without any leading number]
+KEY: [main key, e.g. D, Am, F#m, Bb]
 
-function buildSectionPrompt(s: SectionInfo): string {
-  const sectionName = s.type === "verse" ? `Verse ${s.order}` :
-    s.type === "chorus" ? "Chorus" :
-    s.type === "bridge" ? "Bridge" :
-    s.type === "intro" ? "Intro" :
-    s.type === "coda" ? "Coda" : s.type
-
-  return `Focus ONLY on the "${sectionName}" section of this song sheet image.
-
-This section is located at:
-  - Vertically: from ${s.topPct}% to ${s.bottomPct}% of image height
-  - Horizontally: from ${s.leftPct}% to ${s.rightPct}% of image width
-  - It starts with the words: "${s.firstWords}"
-  - It ends with the words: "${s.lastWords}"
-
-Ignore everything outside this region completely.
-
-For every chord+lyric pair WITHIN this section, use the VERTICAL DROP METHOD:
-  → Drop a vertical line from the CENTER of each chord name straight down to the lyric
-  → The letter the line touches = where you insert [Chord]
-  → Insert [Chord] immediately BEFORE that letter, no space between ] and the letter
-
-RULES:
-- NEVER add hyphens to words. If chord lands mid-word, insert inline without hyphen: mul[C#m]țumim ✓, mul-[C#m]țumim ✗
-- Preserve all Romanian diacritics: ă â î ș ț Ș Ț Ă Â Î
-- Do NOT include a section marker ({verse}/{chorus}/etc.) — just the lyrics with chords
-
-Return ONLY the ChordPro lines for this section as plain text (no JSON, no markdown).
-Example output:
+━━━ EXAMPLE OUTPUT ━━━
+{verse}
 [D]Nădejdea [G]noastră [D]Cine e?
 Doar [Bm]Cristos. Doar [A]Cristos.
-[D]Și sin[F#m]gura [Bm]încredere?`
-}
+[D]Și sin[F#m]gura [Bm]încredere?
+Doar [A]El. Doar [D]El.
+
+{chorus}
+[G]Slavă [D]Ție, [A]Doamne!
+[Bm]Slavă [G]Ție [A]mereu.
+
+TITLE: Nădejdea noastră
+KEY: D`
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-function sectionMarker(type: SectionInfo["type"]): string {
-  const map: Record<SectionInfo["type"], string> = {
-    verse: "verse", chorus: "chorus", bridge: "bridge",
-    intro: "intro", coda: "coda", "pre-chorus": "bridge", outro: "outro",
-  }
-  return `{${map[type] ?? type}}`
-}
-
 function normalizeKey(key: string): string {
   if (!key) return ""
   if (/^[A-G][b#]?m?$/.test(key)) return key
@@ -103,19 +72,17 @@ function normalizeKey(key: string): string {
   return key
 }
 
-function extractSections(text: string): SectionInfo[] {
-  const jsonMatch = text.match(/\[[\s\S]*\]/)
-  if (!jsonMatch) return []
-  return JSON.parse(jsonMatch[0]) as SectionInfo[]
-}
+function parseResponse(raw: string): { content: string; title: string; key: string } {
+  const titleMatch = raw.match(/^TITLE:\s*(.+)$/m)
+  const keyMatch = raw.match(/^KEY:\s*(.+)$/m)
+  const title = titleMatch?.[1]?.trim() ?? ""
+  const key = keyMatch?.[1]?.trim() ?? ""
 
-function extractMeta(text: string): { title: string; key: string } {
-  const titleMatch = text.match(/^TITLE:\s*(.+)$/m)
-  const keyMatch = text.match(/^KEY:\s*(.+)$/m)
-  return {
-    title: titleMatch?.[1]?.trim() ?? "",
-    key: keyMatch?.[1]?.trim() ?? "",
-  }
+  // Content = everything before the first TITLE: or KEY: line
+  const metaStart = raw.search(/^(TITLE:|KEY:)/m)
+  const content = (metaStart > 0 ? raw.slice(0, metaStart) : raw).trim()
+
+  return { content, title, key }
 }
 
 // ─── Route handler ────────────────────────────────────────────────────────────
@@ -154,77 +121,33 @@ export async function POST(req: NextRequest) {
   const ai = new GoogleGenAI({ apiKey })
   const imagepart = { inlineData: { data: base64, mimeType } }
 
-  // ── Step 1: Detect sections ──────────────────────────────────────────────
-  let sections: SectionInfo[]
-  let title = ""
-  let key = ""
-
   try {
-    const step1 = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+    const result = await ai.models.generateContent({
+      model: "gemini-2.5-pro",
       config: {
-        systemInstruction: STEP1_SYSTEM,
-        thinkingConfig: { thinkingBudget: 8192 },
+        systemInstruction: SYSTEM_PROMPT,
+        thinkingConfig: { thinkingBudget: 32768 },
         temperature: 0,
       },
-      contents: [{ role: "user", parts: [imagepart, { text: STEP1_PROMPT }] }],
+      contents: [{ role: "user", parts: [imagepart, { text: MAIN_PROMPT }] }],
     })
-    const raw = step1.text ?? ""
-    sections = extractSections(raw)
-    const meta = extractMeta(raw)
-    title = meta.title
-    key = meta.key
 
-    if (sections.length === 0) {
-      // Fallback: treat entire image as one section
-      sections = [{
-        type: "verse", order: 1,
-        topPct: 0, bottomPct: 100, leftPct: 0, rightPct: 100,
-        firstWords: "", lastWords: "",
-      }]
-    }
+    const raw = result.text ?? ""
+    const { content, title, key } = parseResponse(raw)
+
+    return Response.json({
+      title,
+      defaultKey: normalizeKey(key),
+      content,
+      freeLimit: FREE_LIMIT,
+    })
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
     if (msg.includes("429") || msg.toLowerCase().includes("quota"))
-      return Response.json({ error: `⚠️ Limita gratuită Gemini a fost atinsă (${FREE_LIMIT}/zi). Încearcă mâine.`, rateLimited: true }, { status: 429 })
-    return Response.json({ error: `Eroare la detectarea secțiunilor: ${msg}` }, { status: 500 })
+      return Response.json(
+        { error: `⚠️ Limita gratuită Gemini 2.5 Pro a fost atinsă (${FREE_LIMIT}/zi). Încearcă mâine.`, rateLimited: true },
+        { status: 429 }
+      )
+    return Response.json({ error: `Eroare la conversia melodiei: ${msg}` }, { status: 500 })
   }
-
-  // ── Step 2: Analyze each section in parallel ─────────────────────────────
-  const sectionChordPros = await Promise.all(
-    sections.map(async (section) => {
-      try {
-        const step2 = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
-          config: {
-            systemInstruction: STEP2_SYSTEM,
-            thinkingConfig: { thinkingBudget: 24576 },
-            temperature: 0,
-          },
-          contents: [{
-            role: "user",
-            parts: [imagepart, { text: buildSectionPrompt(section) }],
-          }],
-        })
-        return { section, content: (step2.text ?? "").trim() }
-      } catch {
-        return { section, content: `(eroare la secțiunea ${section.type} ${section.order})` }
-      }
-    })
-  )
-
-  // ── Step 3: Assemble ──────────────────────────────────────────────────────
-  const chordproLines: string[] = []
-  for (const { section, content } of sectionChordPros) {
-    if (chordproLines.length > 0) chordproLines.push("")
-    chordproLines.push(sectionMarker(section.type))
-    chordproLines.push(content)
-  }
-
-  return Response.json({
-    title,
-    defaultKey: normalizeKey(key),
-    content: chordproLines.join("\n"),
-    freeLimit: FREE_LIMIT,
-  })
 }
