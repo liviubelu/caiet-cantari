@@ -3,86 +3,60 @@ import { type NextRequest } from "next/server"
 import { getSession } from "@/lib/session"
 import { canEditSongs } from "@/auth"
 
-const FREE_LIMIT = 1500 // Gemini free tier: 1500 requests/day
+// Each conversion = 2 API calls → safe daily limit = 750 conversions
+const FREE_LIMIT = 750
 
-const SYSTEM_INSTRUCTION = `You are an expert ChordPro converter for Romanian church songs.
-Your task is to convert song sheets (images or PDFs) into ChordPro format with PRECISE chord placement.
+// ─── Step 1: Visual analysis ────────────────────────────────────────────────
+const STEP1_SYSTEM = `You are a precise music notation analyzer.
+Your only job is to look at a Romanian church song sheet image and report exactly which letter each chord is aligned above — nothing more.`
 
-CRITICAL RULE — NEVER ADD HYPHENS: Do NOT add hyphens or dashes to any word in the lyrics. If you see "singura" write "singura", never "sin-gura". ChordPro places chords mid-word WITHOUT hyphens. Hyphens are FORBIDDEN unless they already exist in the original text.
+const STEP1_PROMPT = `Analyze this song sheet image with extreme care. Take all the time you need.
 
-HOW TO MAP CHORD POSITIONS — VERTICAL DROP METHOD:
-For every chord symbol in the image, imagine dropping a vertical line straight down from the CENTER of that chord name to the lyrics line below. The letter the vertical line hits is where you place [Chord].
+For every pair of (chord line, lyric line) in the image, apply the VERTICAL DROP METHOD:
+  → Drop an imaginary vertical line straight down from the CENTER of each chord name
+  → Find the exact letter in the lyric line that the vertical line passes through
+  → That letter is where the chord belongs
 
-Step-by-step for each chord+lyric pair:
-1. Find the chord name in the image (e.g. "F#m")
-2. Mentally draw a vertical line from the center of "F#m" straight down to the lyric
-3. That letter (could be mid-word!) is where you insert [F#m]
-4. No space between [F#m] and that letter
+Output format — repeat for every lyric line in the song:
 
-NEVER ADD HYPHENS. If the vertical line lands mid-word, insert the chord there with NO hyphen. Example: vertical line from "C#m" drops onto "ț" in "mulțumim" → output: mul[C#m]țumim (no hyphen, chord inserted at that exact letter).
+LYRIC: [exact lyric text, preserve all Romanian characters: ă â î ș ț Ș Ț Ă Â Î]
+CHORDS: D→[N]ădejdea | G→noastr[ă] | Bm→[C]ristos
+         (the letter inside [ ] is the exact target letter)
 
-WORKED EXAMPLES:
+For lyric lines with no chords: write CHORDS: (none)
+For section headers (VERSE, CHORUS, BRIDGE, etc.): write SECTION: verse / chorus / bridge / intro
 
-Example A — vertical line from "G" drops onto "N" of "Nădejdea"; from "D" drops onto "C" of "Cine":
-OUTPUT: [G]Nădejdea noastră [D]Cine e?
-
-Example B — vertical line from "Bm" drops onto "C" of first "Cristos"; from "A" drops onto "C" of second "Cristos":
-OUTPUT: Doar [Bm]Cristos. Doar [A]Cristos.
-
-Example C — vertical line drops mid-word, NO HYPHEN:
-"C#m" drops onto "ț" in "mulțumim" → insert there without hyphen
-"G#m" drops onto second "m" in "mulțumim"
-OUTPUT: [E]Veniți, [B]să Îi [C#m]mulțu[G#m]mim, veniți
-
-Example D — multiple chords, trust the vertical drop for each:
-Chords D G D A G above "Cântăm: „Aleluia!" Viața noastră-L va lăuda,"
-OUTPUT: [D]Cântăm: [G]„[D]Aleluia!" [A]Viața [G]noastră-L va lăuda,
-← "noastră-L" keeps hyphen because it exists in the original image text
-
-CHORDPRO FORMAT RULES:
-1. [Chord]syllable — no space between ] and the syllable/character it precedes
-2. Section markers on their own line:
-   - {verse} → Strofa / numbered verses (1., 2., 3.)
-   - {chorus} → Refren / R: / Chorus
-   - {bridge} → Prerefren / Bridge / Pre-chorus
-   - {intro} → Intro
-3. Empty line between sections
-4. Preserve ALL Romanian diacritics exactly: ă â î ș ț Ș Ț Ă Â Î
-5. Lowercase chord notation means minor: c# = C#m, g#m = G#m, bm = Bm, e = Em
-6. Include ALL verses with {verse} before each one
-
-KEY MAPPING (Romanian → standard):
-MI → E, DO → C, RE → D, FA → F, SOL → G, LA → A, SI → B
-FA# → F#, DO# → C#, SOL# → G#, RE# / MIb → Eb, LA# / SIb → Bb
-mi → Em, do → Cm, re → Dm, fa → Fm, sol → Gm, la → Am, si → Bm, fa# → F#m
-If no key shown, infer from the first chord of the song.
-
-IGNORE:
-- Song number prefix from title (e.g. "213.", "260.")
-- Verse numbers at line start (1., 2., 3.)
-- Repeat signs |: :| — include lyrics only once
-- % repeat markers
-- Page numbers, URLs, source attributions
-- Chord diagrams or tablature at bottom of page`
-
-const USER_PROMPT = `Convert this song sheet to ChordPro format. Take as much time as you need — accuracy matters more than speed.
-
-For EVERY chord+lyric pair:
-1. IDENTIFY: List every chord name you see above that lyric line, in left-to-right order
-2. DROP: For each chord, drop a vertical line from its center to the lyric — note exactly which letter it hits
-3. VERIFY: Double-check each placement — does the chord land on the right syllable compared to the image?
-4. WRITE: Insert [Chord] at that letter, no hyphen, no space between ] and the letter
+At the end write:
+TITLE: [song title without any number prefix like "1." or "213."]
+KEY: [the main key of the song in standard notation]
 
 Rules:
-- NEVER invent chords not visible in the image
-- NEVER skip chords that are in the image
-- NEVER add hyphens to words
-- Each [Chord] belongs to exactly one letter position
+- Be extremely precise about each chord's vertical position
+- If a chord lands mid-word, report the mid-word letter — do NOT add hyphens
+- Report chords in left-to-right order as they appear in the image
+- Include every section and every verse`
 
-Process every section in order. Include ALL verses (even if chorus repeats).
+// ─── Step 2: ChordPro conversion ────────────────────────────────────────────
+const STEP2_SYSTEM = `You are a ChordPro formatter for Romanian church songs.
+You receive a precise chord-position analysis and your only job is to format it correctly.`
 
-Return ONLY a valid JSON object, no markdown, no code fences:
-{"title":"Song title without number prefix","defaultKey":"Key in standard notation (D, Am, F#m, etc.)","content":"Full ChordPro content as a multiline string with \\n for newlines"}`
+const STEP2_PROMPT = `Using the chord analysis above, produce the ChordPro content.
+
+Formatting rules:
+1. For each lyric line, insert [Chord] immediately BEFORE the letter marked with [ ] in the analysis
+   Example: LYRIC "Nădejdea" with D→[N] → output: [D]Nădejdea
+   Example: LYRIC "mulțumim" with C#m→mul[ț] → output: mul[C#m]țumim
+2. NEVER add hyphens to any word — not for mid-word chords, not for anything
+   The word "singura" stays "singura" even if a chord falls on the "g"
+3. Section markers on their own line (before the section, blank line after):
+   {verse} · {chorus} · {bridge} · {intro}
+4. Blank line between sections
+5. Preserve all Romanian diacritics exactly: ă â î ș ț Ș Ț Ă Â Î
+6. Include ALL verses (every {verse} section)
+7. If a line has CHORDS: (none), write it as plain text with no chord brackets
+
+Return ONLY a valid JSON object. No markdown. No code fences. No explanation:
+{"title":"Song title","defaultKey":"Key (D, Am, F#m, etc.)","content":"full ChordPro with \\n for newlines"}`
 
 function extractJSON(text: string): { title: string; defaultKey: string; content: string } {
   const cleaned = text
@@ -143,47 +117,59 @@ export async function POST(req: NextRequest) {
 
   const ai = new GoogleGenAI({ apiKey })
 
+  const callOptions = {
+    thinkingConfig: { thinkingBudget: 24576 },
+    temperature: 0 as const,
+  }
+
+  // ── Pas 1: Analiză vizuală ──────────────────────────────────────────────
+  let analysis: string
+  try {
+    const step1 = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      config: { systemInstruction: STEP1_SYSTEM, ...callOptions },
+      contents: [{
+        role: "user",
+        parts: [
+          { inlineData: { data: base64, mimeType } },
+          { text: STEP1_PROMPT },
+        ],
+      }],
+    })
+    analysis = step1.text ?? ""
+    if (!analysis.trim()) {
+      return Response.json({ error: "Analiza imaginii a eșuat. Încearcă o imagine mai clară." }, { status: 422 })
+    }
+  } catch (err: unknown) {
+    return Response.json({ error: `Eroare la analiza imaginii: ${err instanceof Error ? err.message : String(err)}` }, { status: 500 })
+  }
+
+  // ── Pas 2: Conversie în ChordPro ────────────────────────────────────────
   let responseText: string
   try {
-    const response = await ai.models.generateContent({
+    const step2 = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-        thinkingConfig: { thinkingBudget: 24576 },
-        temperature: 0,
-      },
-      contents: [
-        {
-          role: "user",
-          parts: [
-            { inlineData: { data: base64, mimeType } },
-            { text: USER_PROMPT },
-          ],
-        },
-      ],
+      config: { systemInstruction: STEP2_SYSTEM, ...callOptions },
+      contents: [{
+        role: "user",
+        parts: [{
+          text: `Here is the precise chord-position analysis from Step 1:\n\n${analysis}\n\n---\n\n${STEP2_PROMPT}`,
+        }],
+      }],
     })
-    responseText = response.text ?? ""
+    responseText = step2.text ?? ""
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
-
     if (msg.includes("429") || msg.toLowerCase().includes("quota")) {
       return Response.json(
         {
-          error: `⚠️ Limita gratuită Gemini a fost atinsă (${FREE_LIMIT}/zi). Încearcă mâine sau reduce numărul de conversii pe zi.`,
+          error: `⚠️ Limita gratuită Gemini a fost atinsă (${FREE_LIMIT}/zi). Încearcă mâine.`,
           rateLimited: true,
         },
         { status: 429 }
       )
     }
-
-    if (msg.includes("400") || msg.toLowerCase().includes("api key")) {
-      return Response.json(
-        { error: "GOOGLE_AI_KEY invalid. Verifică key-ul în Vercel → Environment Variables." },
-        { status: 400 }
-      )
-    }
-
-    return Response.json({ error: `Eroare Gemini: ${msg}` }, { status: 500 })
+    return Response.json({ error: `Eroare la conversie: ${msg}` }, { status: 500 })
   }
 
   let parsed: { title: string; defaultKey: string; content: string }

@@ -9,7 +9,7 @@ import { DIATONIC, SECTIONS } from "@/lib/diatonic"
 
 // ── Gemini usage tracking (localStorage, resets daily) ──────────────────────
 const USAGE_KEY = "gemini_usage"
-const FREE_LIMIT = 1500
+const FREE_LIMIT = 750 // 2 API calls per conversion × 1500 free calls/day
 
 interface UsageData { date: string; count: number }
 
