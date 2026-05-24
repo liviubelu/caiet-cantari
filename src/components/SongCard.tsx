@@ -9,6 +9,7 @@ interface Song {
   firstLine: string | null
   category: string | null
   defaultKey: string | null
+  hasChords?: boolean
 }
 
 interface Props {
@@ -34,6 +35,17 @@ export function SongCard({ song, favorited = false, showCategory = false, authen
             style={{ backgroundColor: cat.light, color: cat.color }}
           >
             {song.category}
+          </span>
+        )}
+        {song.hasChords === false && (
+          <span className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-400">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+              <path d="M9 18V5l12-2v13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <circle cx="6" cy="18" r="3" stroke="currentColor" strokeWidth="2"/>
+              <circle cx="18" cy="16" r="3" stroke="currentColor" strokeWidth="2"/>
+              <path d="M3 3l18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+            fără acorduri
           </span>
         )}
       </Link>

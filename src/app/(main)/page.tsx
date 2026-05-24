@@ -128,7 +128,7 @@ export default async function HomePage({ searchParams }: Props) {
                 {grouped[letter].map((song) => (
                   <SongCard
                     key={song.id}
-                    song={song}
+                    song={{ ...song, hasChords: song.content?.includes("[") }}
                     favorited={favSet.has(song.id)}
                     authenticated={!!session?.user}
                   />
