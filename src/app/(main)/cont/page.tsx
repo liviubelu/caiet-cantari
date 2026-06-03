@@ -23,15 +23,15 @@ export default async function ContPage() {
     : "?"
 
   return (
-    <div className="lg:max-w-xl lg:mx-auto">
-      <div className="px-4 pt-12 lg:pt-6 pb-4">
+    <div className="max-w-xl mx-auto px-4 lg:px-0">
+      <div className="pt-12 lg:pt-6 pb-4">
         <p className="text-[10px] font-semibold tracking-widest text-gray-400 uppercase mb-1">
           Profil
         </p>
         <h1 className="text-[28px] font-display font-bold text-gray-900">Contul meu</h1>
       </div>
 
-      <div className="px-4 space-y-3">
+      <div className="space-y-3">
         <div className="bg-white rounded-2xl p-5 border border-gray-100 flex items-center gap-4">
           <div className="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center text-lg font-bold text-indigo-700">
             {initials}

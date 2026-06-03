@@ -34,8 +34,8 @@ export default async function ColectiiPage() {
   )
 
   return (
-    <div className="lg:max-w-2xl lg:mx-auto">
-      <div className="px-4 pt-12 lg:pt-6 pb-4">
+    <div>
+      <div className="px-4 lg:px-8 pt-12 lg:pt-6 pb-4">
         <p className="text-[10px] font-semibold tracking-widest text-gray-400 uppercase mb-1">
           Bibliotecă
         </p>
@@ -43,17 +43,19 @@ export default async function ColectiiPage() {
         <p className="text-sm text-gray-500 mt-1">Cântările grupate după tipul lor.</p>
       </div>
 
-      <div className="px-4 space-y-3">
+      <div className="px-4 lg:px-8">
         {sortedCategories.length === 0 ? (
           <p className="text-center py-16 text-sm text-gray-400">Nicio melodie adăugată încă.</p>
         ) : (
-          sortedCategories.map((cat) => (
-            <CollectionCard
-              key={cat}
-              category={cat}
-              songs={grouped[cat].map((s) => ({ id: s.id, title: s.title }))}
-            />
-          ))
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {sortedCategories.map((cat) => (
+              <CollectionCard
+                key={cat}
+                category={cat}
+                songs={grouped[cat].map((s) => ({ id: s.id, title: s.title }))}
+              />
+            ))}
+          </div>
         )}
       </div>
     </div>

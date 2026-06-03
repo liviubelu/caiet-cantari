@@ -42,8 +42,8 @@ export default async function FavoritePage() {
     : "?"
 
   return (
-    <div className="lg:max-w-2xl lg:mx-auto">
-      <div className="px-4 pt-12 lg:pt-6 pb-4">
+    <div>
+      <div className="px-4 lg:px-8 pt-12 lg:pt-6 pb-4">
         {/* Mobile-only header row */}
         <div className="flex items-center justify-between mb-4 lg:hidden">
           <div className="flex items-center gap-2.5">
@@ -82,7 +82,7 @@ export default async function FavoritePage() {
         </div>
       </div>
 
-      <div className="px-4">
+      <div className="px-4 lg:px-8">
         {favSongs.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
             <p className="text-sm">Nu ai melodii favorite încă.</p>
@@ -97,7 +97,7 @@ export default async function FavoritePage() {
                 <p className="text-xs font-bold text-gray-500 italic">{cat}</p>
                 <p className="text-[10px] text-gray-400">{grouped[cat].length}</p>
               </div>
-              <div className="space-y-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
                 {grouped[cat].map((song) => (
                   <SongCard
                     key={song.id}

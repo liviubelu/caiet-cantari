@@ -20,11 +20,11 @@ export default async function EditSongPage({ params }: Props) {
   if (!song) notFound()
 
   return (
-    <div className="lg:max-w-2xl lg:mx-auto">
-      <div className="px-4 pt-12 lg:pt-6 pb-4">
+    <div className="max-w-2xl mx-auto px-4">
+      <div className="pt-12 lg:pt-6 pb-4">
         <h1 className="text-[28px] font-display font-bold text-gray-900">Editează melodia</h1>
       </div>
-      <div className="px-4">
+      <div>
         <SongForm
           songId={id}
           initialValues={{

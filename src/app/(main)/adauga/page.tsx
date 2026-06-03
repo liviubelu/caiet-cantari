@@ -10,8 +10,8 @@ export default async function AdaugaPage() {
   if (!session?.user?.id || !canEditSongs(session.user.role)) redirect("/")
 
   return (
-    <div className="lg:max-w-2xl lg:mx-auto">
-      <div className="px-4 pt-12 lg:pt-6 pb-4 flex items-center gap-3">
+    <div className="max-w-2xl mx-auto px-4">
+      <div className="pt-12 lg:pt-6 pb-4 flex items-center gap-3">
         <Link href="/" className="text-gray-400 hover:text-gray-600">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
             <path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -19,7 +19,7 @@ export default async function AdaugaPage() {
         </Link>
         <h1 className="text-[28px] font-display font-bold text-gray-900">Melodie nouă</h1>
       </div>
-      <div className="px-4">
+      <div>
         <SongForm />
       </div>
     </div>

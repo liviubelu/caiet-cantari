@@ -43,8 +43,9 @@ export default async function HomePage({ searchParams }: Props) {
     : null
 
   return (
-    <div className="lg:max-w-2xl lg:mx-auto">
-      <div className="sticky top-0 z-40 bg-[#f0f2f5]/95 backdrop-blur-sm px-4 pt-12 lg:pt-6 pb-3">
+    <div>
+      {/* Sticky header — full width */}
+      <div className="sticky top-0 z-40 bg-[#f0f2f5]/95 backdrop-blur-sm px-4 lg:px-8 pt-12 lg:pt-6 pb-3">
         {/* Mobile-only header row — on desktop this is in the sidebar */}
         <div className="flex items-center justify-between mb-4 lg:hidden">
           <div className="flex items-center gap-2.5">
@@ -105,7 +106,7 @@ export default async function HomePage({ searchParams }: Props) {
         </div>
       </div>
 
-      <div className="px-4 py-2">
+      <div className="px-4 lg:px-8 py-2">
         {allSongs.length === 0 && (
           <div className="text-center py-16 text-gray-400">
             <p className="text-sm">
@@ -124,7 +125,7 @@ export default async function HomePage({ searchParams }: Props) {
           .map((letter) => (
             <div key={letter} className="mb-4">
               <p className="text-xs font-bold text-gray-400 px-1 mb-2">{letter}</p>
-              <div className="space-y-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
                 {grouped[letter].map((song) => (
                   <SongCard
                     key={song.id}
