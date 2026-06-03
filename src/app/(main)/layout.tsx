@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic"
 import { getSession } from "@/lib/session"
 import { BottomNav } from "@/components/BottomNav"
 import { Sidebar } from "@/components/Sidebar"
+import { ScrollContainer } from "@/components/ScrollContainer"
 
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession()
@@ -15,10 +16,10 @@ export default async function MainLayout({ children }: { children: React.ReactNo
       {/* Desktop sidebar — hidden on mobile */}
       <Sidebar user={user} />
 
-      {/* Content — the ONLY scroll container; prevents iOS overscroll glitches */}
-      <div className="lg:pl-64 h-full overflow-y-auto overscroll-contain">
+      {/* Content — the ONLY scroll container; bg-white covers padding area below short pages */}
+      <ScrollContainer>
         <main className="min-h-full flex flex-col pb-32 lg:pb-12">{children}</main>
-      </div>
+      </ScrollContainer>
 
       {/* Mobile bottom nav — hidden on desktop */}
       <BottomNav />

@@ -42,7 +42,7 @@ export default async function FavoritePage() {
     : "?"
 
   return (
-    <div>
+    <div className="bg-[#f0f2f5] flex-1">
       <div className="px-4 lg:px-8 pt-12 lg:pt-6 pb-4">
         {/* Mobile-only header row */}
         <div className="flex items-center justify-between mb-4 lg:hidden">
