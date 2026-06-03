@@ -23,6 +23,7 @@ export function SongDetailClient({ content, defaultKey, songId, isFavorited, isA
   const [showChords, setShowChords] = useState(true)
   const [fontSize, setFontSize] = useState(FONT_DEFAULT)
   const [twoColumns, setTwoColumns] = useState(false)
+  const [isDesktop, setIsDesktop] = useState(false)
 
   useEffect(() => {
     const savedSize = localStorage.getItem("songFontSize")
@@ -32,6 +33,13 @@ export function SongDetailClient({ content, defaultKey, songId, isFavorited, isA
     }
     const savedCols = localStorage.getItem("songTwoColumns")
     if (savedCols !== null) setTwoColumns(savedCols === "1")
+
+    // Track desktop breakpoint (lg = 1024px) — auto single-column on mobile
+    const mq = window.matchMedia("(min-width: 1024px)")
+    setIsDesktop(mq.matches)
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches)
+    mq.addEventListener("change", handler)
+    return () => mq.removeEventListener("change", handler)
   }, [])
 
   function changeFontSize(delta: number) {
@@ -123,7 +131,7 @@ export function SongDetailClient({ content, defaultKey, songId, isFavorited, isA
 
       {/* Song content */}
       <div className={
-        twoColumns
+        twoColumns && isDesktop
           ? "px-4 py-5 lg:px-10 lg:py-7"
           : "px-4 py-5 lg:px-10 lg:py-7 lg:max-w-3xl"
       }>
@@ -132,7 +140,7 @@ export function SongDetailClient({ content, defaultKey, songId, isFavorited, isA
           semitones={semitones}
           showChords={showChords}
           fontSize={fontSize}
-          twoColumns={twoColumns}
+          twoColumns={twoColumns && isDesktop}
         />
       </div>
     </div>
