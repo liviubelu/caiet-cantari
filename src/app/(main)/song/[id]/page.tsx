@@ -42,7 +42,7 @@ export default async function SongPage({ params }: Props) {
   const cat = getCategoryColor(song.category)
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="bg-white">
       {/* Sticky top bar — full width */}
       <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-100 px-4 lg:px-8 py-3 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900">
