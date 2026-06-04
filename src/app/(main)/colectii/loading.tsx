@@ -1,7 +1,7 @@
 export default function ColectiiLoading() {
   return (
     <div className="bg-[#f0f2f5] flex-1 animate-pulse">
-      <div className="px-4 lg:px-8 pt-12 lg:pt-6 pb-4">
+      <div className="px-4 lg:px-8 pt-safe-header lg:pt-6 pb-4">
         <div className="h-2.5 w-16 bg-gray-300 rounded mb-2" />
         <div className="h-7 w-28 bg-gray-300 rounded mb-1.5" />
         <div className="h-3.5 w-52 bg-gray-200 rounded" />

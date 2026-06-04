@@ -2,7 +2,7 @@ export default function HomeLoading() {
   return (
     <div className="bg-[#f0f2f5] flex-1 animate-pulse">
       {/* Sticky header */}
-      <div className="sticky top-0 z-40 bg-[#f0f2f5]/95 px-4 lg:px-8 pt-12 lg:pt-6 pb-3">
+      <div className="sticky top-0 z-40 bg-[#f0f2f5]/95 px-4 lg:px-8 pt-safe-header lg:pt-6 pb-3">
         {/* Mobile header row */}
         <div className="flex items-center justify-between mb-4 lg:hidden">
           <div className="flex items-center gap-2.5">

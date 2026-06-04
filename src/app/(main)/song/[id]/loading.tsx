@@ -2,7 +2,7 @@ export default function SongLoading() {
   return (
     <div className="bg-white flex-1 animate-pulse">
       {/* Top bar */}
-      <div className="sticky top-0 z-40 bg-white/95 border-b border-gray-100 px-4 lg:px-8 py-3 flex items-center justify-between">
+      <div className="sticky top-0 z-40 bg-white/95 border-b border-gray-100 px-4 lg:px-8 pt-safe-bar pb-3 lg:pt-3 flex items-center justify-between">
         <div className="h-4 w-16 bg-gray-200 rounded" />
         <div className="h-4 w-12 bg-gray-100 rounded" />
       </div>

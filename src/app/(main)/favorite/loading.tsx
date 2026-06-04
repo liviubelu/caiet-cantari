@@ -1,7 +1,7 @@
 export default function FavoriteLoading() {
   return (
     <div className="bg-[#f0f2f5] flex-1 animate-pulse">
-      <div className="px-4 lg:px-8 pt-12 lg:pt-6 pb-4">
+      <div className="px-4 lg:px-8 pt-safe-header lg:pt-6 pb-4">
         {/* Mobile header */}
         <div className="flex items-center justify-between mb-4 lg:hidden">
           <div className="flex items-center gap-2.5">

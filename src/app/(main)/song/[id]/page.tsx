@@ -45,7 +45,7 @@ export default async function SongPage({ params }: Props) {
   return (
     <div className="bg-white flex-1">
       {/* Sticky top bar — full width */}
-      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-100 px-4 lg:px-8 py-3 flex items-center justify-between">
+      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-100 px-4 lg:px-8 pt-safe-bar pb-3 lg:pt-3 flex items-center justify-between">
         <BackButton />
         <div className="flex items-center gap-2">
           {session?.user && canEditSongs(session.user.role) && (

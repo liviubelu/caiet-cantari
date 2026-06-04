@@ -26,9 +26,37 @@ body {
   overscroll-behavior: none;
 }
 
-.pb-safe {
-  /* Adds safe area padding so nav content stays above Android/iOS gesture bar */
-  padding-bottom: max(10px, env(safe-area-inset-bottom));
+/* ── Safe-area utilities (viewport-fit=cover is set in root layout) ────────
+   @utility participates in Tailwind v4's cascade so responsive prefixes
+   like lg: can override these classes. */
+
+@utility pb-safe {
+  /* Content above the home-indicator / gesture bar */
+  padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
+}
+
+@utility pl-safe {
+  /* Left edge — notch side in landscape-left */
+  padding-left: env(safe-area-inset-left, 0px);
+}
+
+@utility pr-safe {
+  /* Right edge — notch side in landscape-right */
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+@utility pt-safe-header {
+  /* Replaces pt-12 on mobile sticky page headers.
+     Uses whichever is larger: the actual notch height OR 48 px of
+     design breathing room — so content never hides under the Dynamic
+     Island / notch even on the tallest safe areas. */
+  padding-top: max(env(safe-area-inset-top, 0px), 48px);
+}
+
+@utility pt-safe-bar {
+  /* For compact sticky bars (back button, song nav bar) that use small
+     vertical padding but must still clear the notch in portrait. */
+  padding-top: max(env(safe-area-inset-top, 0px), 12px);
 }
 
 .font-display {

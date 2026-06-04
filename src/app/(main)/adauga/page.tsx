@@ -11,7 +11,7 @@ export default async function AdaugaPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4">
-      <div className="pt-12 lg:pt-6 pb-4 flex items-center gap-3">
+      <div className="pt-safe-header lg:pt-6 pb-4 flex items-center gap-3">
         <Link href="/" className="text-gray-400 hover:text-gray-600">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
             <path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />

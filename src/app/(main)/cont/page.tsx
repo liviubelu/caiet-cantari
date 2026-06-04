@@ -25,7 +25,7 @@ export default async function ContPage() {
   return (
     <div className="bg-[#f0f2f5] flex-1">
     <div className="max-w-xl mx-auto px-4 lg:px-0">
-      <div className="pt-12 lg:pt-6 pb-4">
+      <div className="pt-safe-header lg:pt-6 pb-4">
         <p className="text-[10px] font-semibold tracking-widest text-gray-400 uppercase mb-1">
           Profil
         </p>

@@ -32,7 +32,7 @@ export default async function ColectiiPage() {
 
   return (
     <div className="bg-[#f0f2f5] flex-1">
-      <div className="px-4 lg:px-8 pt-12 lg:pt-6 pb-4">
+      <div className="px-4 lg:px-8 pt-safe-header lg:pt-6 pb-4">
         <p className="text-[10px] font-semibold tracking-widest text-gray-400 uppercase mb-1">
           Bibliotecă
         </p>
