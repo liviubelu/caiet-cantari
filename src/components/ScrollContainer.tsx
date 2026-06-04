@@ -6,47 +6,80 @@ import { usePathname } from "next/navigation"
 /**
  * Single scroll root for the app.
  *
- * Save strategy
- * ─────────────
- * • Continuously on scroll events (so the value is always fresh)
- * • In useLayoutEffect cleanup on route change: runs synchronously after
- *   React commits the new DOM but BEFORE browser reflow. This means
- *   scrollTop is still exactly what the user left it at, not yet clamped
- *   by the incoming (possibly shorter) page content.
+ * WHY this is non-trivial
+ * ──────────────────────
+ * • Scroll events can fire AFTER a route change (browser adjusts scrollTop
+ *   when page content gets shorter). The old save-listener is still alive at
+ *   that point (useEffect cleanup is async), so it would overwrite the correct
+ *   saved position with a clamped value.
  *
- * Restore strategy
- * ────────────────
- * • With dynamic (server-fetched) pages, the RSC response may arrive
- *   after useEffect fires, so a single rAF can't scroll to a position
- *   the page isn't tall enough to reach yet.
- * • We watch <main> with ResizeObserver: each time content is added
- *   (streaming RSC chunks, hydration) we retry. As soon as scrollTop
- *   sticks (page is tall enough) we stop.
+ * • Reading el.scrollTop in a useLayoutEffect cleanup (synchronous) can FORCE
+ *   browser reflow, which itself clamps the value — same bug, different path.
+ *
+ * Solution
+ * ────────
+ * • Keep a ref (activePathnameRef) that is updated SYNCHRONOUSLY in
+ *   useLayoutEffect. The save listener checks it: if the stored pathname no
+ *   longer matches the current route, the event came from a browser
+ *   scroll-adjustment and is ignored.
+ *
+ * • Store scroll positions in posRef (set only by intentional scroll events),
+ *   not by reading the DOM. The useLayoutEffect cleanup flushes posRef to
+ *   sessionStorage — no DOM read, no reflow.
+ *
+ * • Restoration uses ResizeObserver on <main> so we retry every time the
+ *   server-rendered content adds more DOM nodes, regardless of how long the
+ *   server takes to respond.
  */
 export function ScrollContainer({ children }: { children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
 
-  // ── Save on departure ────────────────────────────────────────────────────
-  // Cleanup runs synchronously after DOM commit but before browser reflow,
-  // so scrollTop is still at the user's last intentional position.
+  // Updated synchronously (useLayoutEffect) so scroll listeners can check
+  // whether the route has already changed before they save.
+  const activePathnameRef = useRef(pathname)
+
+  // Last intentional scroll position per pathname, captured from scroll events.
+  // We NEVER read el.scrollTop for saving (can trigger reflow and return a
+  // clamped value after new shorter content has been committed).
+  const posRef = useRef<Record<string, number>>({})
+
+  // ── Track active pathname synchronously; flush position on departure ─────
   useLayoutEffect(() => {
-    const el = ref.current
+    const prev = activePathnameRef.current
+    activePathnameRef.current = pathname
+
+    // Initialise position for this route if not yet seen
+    if (!(pathname in posRef.current)) {
+      posRef.current[pathname] = 0
+    }
+
     return () => {
-      if (el) sessionStorage.setItem(`scroll:${pathname}`, String(el.scrollTop))
+      // Flush the last intentional position for the route we're leaving.
+      // Using posRef (not el.scrollTop) avoids any reflow / clamping issues.
+      sessionStorage.setItem(`scroll:${prev}`, String(posRef.current[prev] ?? 0))
     }
   }, [pathname])
 
-  // ── Save continuously while scrolling ───────────────────────────────────
+  // ── Save on scroll ────────────────────────────────────────────────────────
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    const save = () => sessionStorage.setItem(`scroll:${pathname}`, String(el.scrollTop))
-    el.addEventListener("scroll", save, { passive: true })
-    return () => el.removeEventListener("scroll", save)
+
+    const onScroll = () => {
+      // Guard: ignore scroll events that fire after the route has changed
+      // (e.g. browser clamping scrollTop when new content is shorter).
+      if (activePathnameRef.current !== pathname) return
+
+      posRef.current[pathname] = el.scrollTop
+      sessionStorage.setItem(`scroll:${pathname}`, String(el.scrollTop))
+    }
+
+    el.addEventListener("scroll", onScroll, { passive: true })
+    return () => el.removeEventListener("scroll", onScroll)
   }, [pathname])
 
-  // ── Restore on arrival ───────────────────────────────────────────────────
+  // ── Restore on arrival ────────────────────────────────────────────────────
   useEffect(() => {
     const el = ref.current
     if (!el) return
@@ -54,7 +87,6 @@ export function ScrollContainer({ children }: { children: React.ReactNode }) {
     const saved = sessionStorage.getItem(`scroll:${pathname}`)
     const target = saved ? parseInt(saved, 10) : 0
 
-    // Nothing to restore — make sure we're at the top for new routes
     if (target === 0) {
       el.scrollTop = 0
       return
@@ -65,7 +97,7 @@ export function ScrollContainer({ children }: { children: React.ReactNode }) {
     const tryRestore = () => {
       if (done) return
       el.scrollTop = target
-      // If scrollTop accepted the value the page is tall enough — we're done
+      // scrollTop accepted the value → page is tall enough → done
       if (el.scrollTop >= target - 5) {
         done = true
         ro.disconnect()
@@ -73,17 +105,25 @@ export function ScrollContainer({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // ResizeObserver on <main>: fires every time RSC content is added to the
-    // DOM (each streamed chunk, each Suspense boundary resolving). This lets
-    // us retry the moment the page becomes tall enough to accept the position.
+    // ResizeObserver on <main>: fires every time RSC content is streamed into
+    // the DOM. Retries the moment the page becomes tall enough to scroll to
+    // `target`, regardless of server response time.
     const ro = new ResizeObserver(tryRestore)
-    const mainEl = el.firstElementChild // the <main> inside ScrollContainer
+    const mainEl = el.firstElementChild // <main> inside ScrollContainer
     if (mainEl) ro.observe(mainEl)
 
-    // First attempt — handles the case where content is already in the DOM
+    // First attempt — handles the common case where content is already present
     requestAnimationFrame(tryRestore)
 
-    // Safety valve: stop watching after 5 s to avoid leaking the observer
+    // Cancel restoration if the user starts interacting (touch / click)
+    const onUserInteract = () => {
+      done = true
+      ro.disconnect()
+      clearTimeout(timeout)
+    }
+    el.addEventListener("pointerdown", onUserInteract, { once: true, passive: true })
+
+    // Safety valve: give up after 5 s so the observer doesn't leak
     const timeout = setTimeout(() => {
       done = true
       ro.disconnect()
@@ -93,6 +133,7 @@ export function ScrollContainer({ children }: { children: React.ReactNode }) {
       done = true
       ro.disconnect()
       clearTimeout(timeout)
+      el.removeEventListener("pointerdown", onUserInteract)
     }
   }, [pathname])
 
