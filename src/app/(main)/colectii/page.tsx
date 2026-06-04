@@ -1,18 +1,15 @@
-// Colecții don't change often — cache for 1 hour, revalidate in background (ISR)
+// ISR: 1 hour time-based revalidation as a safety net.
+// On every song create/update/delete the API calls revalidateTag("songs"),
+// which clears this page's data immediately — so visitors always see the
+// latest songs without waiting for the 1-hour timer.
 export const revalidate = 3600
 
-import { db } from "@/lib/db"
-import { songs } from "@/lib/schema"
-import { asc } from "drizzle-orm"
+import { getCachedSongsForCollections } from "@/lib/queries"
 import { CollectionCard } from "@/components/CollectionCard"
 import { CATEGORIES } from "@/lib/categories"
 
 export default async function ColectiiPage() {
-  // Select only needed columns — skip `content` (full lyrics) to reduce payload
-  const allSongs = await db
-    .select({ id: songs.id, title: songs.title, category: songs.category, defaultKey: songs.defaultKey, firstLine: songs.firstLine })
-    .from(songs)
-    .orderBy(asc(songs.title))
+  const allSongs = await getCachedSongsForCollections()
 
   const grouped = allSongs.reduce<Record<string, typeof allSongs>>((acc, song) => {
     const cat = song.category ?? "Altele"

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { revalidateTag } from "next/cache"
 import { db } from "@/lib/db"
 import { songs } from "@/lib/schema"
 import { auth, canEditSongs } from "@/auth"
@@ -33,6 +34,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     .returning()
 
   if (!song) return NextResponse.json({ error: "Melodia nu a fost găsită." }, { status: 404 })
+  revalidateTag("songs")
   return NextResponse.json(song)
 }
 
@@ -44,5 +46,6 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
 
   const { id } = await params
   await db.delete(songs).where(eq(songs.id, id))
+  revalidateTag("songs")
   return NextResponse.json({ ok: true })
 }

@@ -1,14 +1,72 @@
 import { cache } from "react"
+import { unstable_cache } from "next/cache"
 import { db } from "@/lib/db"
 import { songs } from "@/lib/schema"
-import { eq } from "drizzle-orm"
+import { eq, asc, ilike, or } from "drizzle-orm"
 
-/**
- * Fetches a song by ID, cached per request.
- * Both generateMetadata and the page component can call this
- * without triggering duplicate DB queries.
- */
-export const getSongById = cache(async (id: string) => {
-  const [song] = await db.select().from(songs).where(eq(songs.id, id)).limit(1)
-  return song ?? null
-})
+// ── Songs list (home page) ──────────────────────────────────────────────────
+// Cached on Vercel Data Cache, tagged "songs".
+// revalidateTag("songs") in the API routes clears this immediately after
+// any create / update / delete — so the next page render is always fresh.
+// A new Vercel deploy also clears all caches automatically (new Build ID).
+export const getCachedSongs = unstable_cache(
+  async (q: string) => {
+    let query = db
+      .select({
+        id: songs.id,
+        title: songs.title,
+        firstLine: songs.firstLine,
+        category: songs.category,
+        defaultKey: songs.defaultKey,
+        hasChords: songs.hasChords,
+      })
+      .from(songs)
+      .orderBy(asc(songs.title))
+      .$dynamic()
+
+    if (q) {
+      query = query.where(
+        or(ilike(songs.title, `%${q}%`), ilike(songs.firstLine, `%${q}%`))
+      )
+    }
+
+    return query
+  },
+  ["songs-list"],
+  { tags: ["songs"] }
+)
+
+// ── Songs for collections page ──────────────────────────────────────────────
+// Same tag — revalidateTag("songs") clears this too.
+export const getCachedSongsForCollections = unstable_cache(
+  async () =>
+    db
+      .select({
+        id: songs.id,
+        title: songs.title,
+        category: songs.category,
+        defaultKey: songs.defaultKey,
+        firstLine: songs.firstLine,
+      })
+      .from(songs)
+      .orderBy(asc(songs.title)),
+  ["songs-for-collections"],
+  { tags: ["songs"] }
+)
+
+// ── Song detail ─────────────────────────────────────────────────────────────
+// Two-layer cache:
+//   1. unstable_cache  → persistent cross-request cache on Vercel Data Cache
+//   2. React cache     → deduplicates within a single request so
+//                        generateMetadata() and the page component share
+//                        one lookup instead of two.
+const getSongByIdPersisted = unstable_cache(
+  async (id: string) => {
+    const [song] = await db.select().from(songs).where(eq(songs.id, id)).limit(1)
+    return song ?? null
+  },
+  ["song-by-id"],
+  { tags: ["songs"] }
+)
+
+export const getSongById = cache(getSongByIdPersisted)

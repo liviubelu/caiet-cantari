@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { revalidateTag } from "next/cache"
 import { db } from "@/lib/db"
 import { songs } from "@/lib/schema"
 import { auth, canEditSongs } from "@/auth"
@@ -39,5 +40,6 @@ export async function POST(req: Request) {
     .values({ title, content, firstLine, category, defaultKey, createdBy: session.user.id, hasChords })
     .returning()
 
+  revalidateTag("songs")
   return NextResponse.json(song, { status: 201 })
 }

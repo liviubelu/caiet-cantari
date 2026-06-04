@@ -3,8 +3,9 @@ export const dynamic = "force-dynamic"
 import { canEditSongs } from "@/auth"
 import { getSession } from "@/lib/session"
 import { db } from "@/lib/db"
-import { songs, favorites } from "@/lib/schema"
-import { eq, asc, ilike, or } from "drizzle-orm"
+import { favorites } from "@/lib/schema"
+import { eq } from "drizzle-orm"
+import { getCachedSongs } from "@/lib/queries"
 import { SongCard } from "@/components/SongCard"
 import Link from "next/link"
 import { ChurchIcon } from "@/components/ChurchIcon"
@@ -16,21 +17,10 @@ interface Props {
 export default async function HomePage({ searchParams }: Props) {
   const [session, { q }] = await Promise.all([getSession(), searchParams])
 
-  let query = db.select({
-    id: songs.id,
-    title: songs.title,
-    firstLine: songs.firstLine,
-    category: songs.category,
-    defaultKey: songs.defaultKey,
-    hasChords: songs.hasChords,
-  }).from(songs).orderBy(asc(songs.title)).$dynamic()
-  if (q) {
-    query = query.where(or(ilike(songs.title, `%${q}%`), ilike(songs.firstLine, `%${q}%`)))
-  }
-
-  // Run songs query and favorites query in parallel
+  // Songs come from cache (Vercel Data Cache, tag "songs").
+  // Favorites must stay dynamic — they are per-user.
   const [allSongs, favs] = await Promise.all([
-    query,
+    getCachedSongs(q ?? ""),
     session?.user?.id
       ? db.select().from(favorites).where(eq(favorites.userId, session.user.id))
       : Promise.resolve([]),
