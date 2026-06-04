@@ -16,6 +16,7 @@ interface Props {
 function splitAtMidpoint(lines: ParsedLine[]): [ParsedLine[], ParsedLine[]] {
   const mid = Math.ceil(lines.length / 2)
 
+  // Look up to 5 lines around mid for a section header to start the right column on
   for (let offset = 0; offset <= 5; offset++) {
     const after = mid + offset
     if (after < lines.length && lines[after].isComment) {
@@ -57,11 +58,9 @@ function LineItem({
   const isEmpty = line.segments.every((s) => !s.chord && !s.text.trim())
   if (isEmpty) return <div key={idx} className="h-3" />
 
-  // ── Lyrics-only (no chords visible) ──────────────────────────────────────
-  // Standard CSS hanging indent: first line at left edge, continuations +1em.
   if (!line.hasChords || !showChords) {
     return (
-      <div key={idx} className="leading-6 text-gray-900 pl-[1em] [text-indent:-1em]">
+      <div key={idx} className="leading-6 text-gray-900">
         {line.segments.map((s, j) => (
           <span key={j}>{s.text}</span>
         ))}
@@ -69,39 +68,19 @@ function LineItem({
     )
   }
 
-  // ── Chord + lyrics ────────────────────────────────────────────────────────
-  // Each segment is a position:relative inline span. The chord is absolutely
-  // positioned above it (bottom: 100%). Text flows naturally — no whitespace-pre,
-  // no inline-block — so long lines wrap at spaces without splitting syllables.
-  //
-  // The key insight for "m[G]ă": "m" (end of seg-1) and "ă" (start of seg-2)
-  // are adjacent inline spans with no whitespace between them, so the browser
-  // will never insert a line break between them. They always land on the same
-  // visual line, regardless of where the wrap happens.
-  //
-  // line-height is enlarged to give the absolute chord room above each text line.
-  // Hanging indent (pl-[1em] + text-indent:-1em) applies to the block container
-  // because all children are inline spans (first LINE BOX is shifted).
-  const chordFontSize = Math.round(fontSize * 0.85)
-  const lineHeight = Math.round(fontSize * 0.9 + chordFontSize + 4) // text + chord + gap
-
   return (
-    <div
-      key={idx}
-      className="text-gray-900 pl-[1em] [text-indent:-1em] mb-1"
-      style={{ lineHeight: `${lineHeight}px` }}
-    >
+    <div key={idx} className="flex flex-wrap items-end leading-none mb-1">
       {line.segments.map((seg, j) => (
-        <span key={j} className="relative">
-          {seg.chord && (
-            <span
-              className="absolute bottom-full left-0 font-bold text-blue-600 leading-none whitespace-nowrap"
-              style={{ fontSize: `${chordFontSize}px`, paddingRight: "0.5rem" }}
-            >
-              {seg.chord}
-            </span>
-          )}
-          {seg.text || (seg.chord ? "​" : "")}
+        <span key={j} className="inline-flex flex-col">
+          <span
+            className="font-bold text-blue-600 leading-none mb-0.5 pr-2"
+            style={{ fontSize: `${Math.round(fontSize * 0.85)}px` }}
+          >
+            {seg.chord ?? " "}
+          </span>
+          <span className="text-gray-900 leading-6 whitespace-pre">
+            {seg.text || (seg.chord ? "​" : "")}
+          </span>
         </span>
       ))}
     </div>
