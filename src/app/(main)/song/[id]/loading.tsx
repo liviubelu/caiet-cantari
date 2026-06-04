@@ -1,6 +1,6 @@
 export default function SongLoading() {
   return (
-    <div className="bg-white flex-1 animate-pulse">
+    <div className="bg-white flex-1 animate-pulse relative after:absolute after:content-[''] after:top-full after:left-0 after:right-0 after:h-32 after:bg-white lg:after:h-12">
       {/* Top bar */}
       <div className="sticky top-0 z-40 bg-white/95 border-b border-gray-100 px-4 lg:px-8 pt-safe-bar pb-3 lg:pt-3 flex items-center justify-between">
         <div className="h-4 w-16 bg-gray-200 rounded" />

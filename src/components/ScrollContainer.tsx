@@ -140,7 +140,7 @@ export function ScrollContainer({ children }: { children: React.ReactNode }) {
   return (
     <div
       ref={ref}
-      className="lg:pl-64 h-full overflow-y-auto overscroll-contain bg-white"
+      className="lg:pl-64 h-full overflow-y-auto overscroll-contain bg-[#f0f2f5]"
     >
       {children}
     </div>

@@ -43,7 +43,7 @@ export default async function SongPage({ params }: Props) {
   const cat = getCategoryColor(song.category)
 
   return (
-    <div className="bg-white flex-1">
+    <div className="bg-white flex-1 relative after:absolute after:content-[''] after:top-full after:left-0 after:right-0 after:h-32 after:bg-white lg:after:h-12">
       {/* Sticky top bar — full width */}
       <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-100 px-4 lg:px-8 pt-safe-bar pb-3 lg:pt-3 flex items-center justify-between">
         <BackButton />
