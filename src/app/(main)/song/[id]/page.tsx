@@ -46,7 +46,7 @@ export default async function SongPage({ params }: Props) {
         <BackButton />
         <div className="flex items-center gap-2">
           {session?.user && canEditSongs(session.user.role) && (
-            <Link href={`/song/${id}/edit`} className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1">
+            <Link href={`/song/${id}/edit`} className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 px-2 py-1">
               Editează
             </Link>
           )}

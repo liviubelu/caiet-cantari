@@ -16,19 +16,20 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: "#4338ca",
+  // Matches the app background; ThemeProvider updates this dynamically on toggle
+  themeColor: "#f0f2f5",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  viewportFit: "cover", // enables env(safe-area-inset-*) on Android + iOS
+  viewportFit: "cover",
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ro" className={`${inter.variable} ${lora.variable} h-full`}>
       <body className="h-full">
-        {/* Apply saved theme before first paint to prevent flash */}
-        <script dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.classList.add('dark')})()` }} />
+        {/* Apply saved theme before first paint — prevents flash and syncs status-bar color */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('theme');if(t==='dark'){document.documentElement.classList.add('dark');var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content','#030712');}})()` }} />
         {/* Capture beforeinstallprompt before React hydrates */}
         <script dangerouslySetInnerHTML={{ __html: `window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window._pwaPrompt=e;});` }} />
         <ThemeProvider>

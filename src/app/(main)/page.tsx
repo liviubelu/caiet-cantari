@@ -50,10 +50,10 @@ export default async function HomePage({ searchParams }: Props) {
               <ChurchIcon size={14} />
             </div>
             <div>
-              <p className="text-[9px] font-semibold tracking-widest text-gray-400 uppercase leading-none">
+              <p className="text-[9px] font-semibold tracking-widest text-gray-400 dark:text-gray-500 uppercase leading-none">
                 Biserica
               </p>
-              <p className="text-sm font-bold text-gray-900 leading-tight">Bartolomeu</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight">Bartolomeu</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -68,7 +68,7 @@ export default async function HomePage({ searchParams }: Props) {
               </Link>
             )}
             {initials ? (
-              <Link href="/cont" className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-[11px] font-bold text-gray-600 hover:bg-gray-300 transition">
+              <Link href="/cont" className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-[11px] font-bold text-gray-600 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition">
                 {initials}
               </Link>
             ) : (
@@ -105,7 +105,7 @@ export default async function HomePage({ searchParams }: Props) {
 
       <div className="px-4 lg:px-8 py-2">
         {allSongs.length === 0 && (
-          <div className="text-center py-16 text-gray-400">
+          <div className="text-center py-16 text-gray-400 dark:text-gray-500">
             <p className="text-sm">
               {q ? `Nicio melodie găsită pentru „${q}"` : "Nicio melodie adăugată încă."}
             </p>

@@ -56,20 +56,20 @@ export default async function FavoritePage() {
               <ChurchIcon size={14} />
             </div>
             <div>
-              <p className="text-[9px] font-semibold tracking-widest text-gray-400 uppercase leading-none">
+              <p className="text-[9px] font-semibold tracking-widest text-gray-400 dark:text-gray-500 uppercase leading-none">
                 Cartea ta de cântări
               </p>
-              <p className="text-sm font-bold text-gray-900 leading-tight">Cântările mele</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight">Cântările mele</p>
             </div>
           </div>
-          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-[11px] font-bold text-gray-600">
+          <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-[11px] font-bold text-gray-600 dark:text-gray-200">
             {initials}
           </div>
         </div>
         {/* Desktop page title */}
         <h1 className="hidden lg:block text-[28px] font-display font-bold text-gray-900 dark:text-gray-100 leading-tight mb-4">Favorite</h1>
 
-        <p className="text-sm text-gray-500 italic leading-relaxed border-l-2 border-blue-400 pl-3 py-1 mb-4">
+        <p className="text-sm text-gray-500 dark:text-gray-400 italic leading-relaxed border-l-2 border-blue-400 dark:border-blue-600 pl-3 py-1 mb-4">
           „Voi cânta Domnului cât voi trăi, voi lăuda pe Dumnezeul meu cât voi fi." — Psalm 104:33
         </p>
 
@@ -99,8 +99,8 @@ export default async function FavoritePage() {
           sortedCategories.map((cat) => (
             <div key={cat} className="mb-5">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-bold text-gray-500 italic">{cat}</p>
-                <p className="text-[10px] text-gray-400">{grouped[cat].length}</p>
+                <p className="text-xs font-bold text-gray-500 dark:text-gray-400 italic">{cat}</p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500">{grouped[cat].length}</p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
                 {grouped[cat].map((song) => (
