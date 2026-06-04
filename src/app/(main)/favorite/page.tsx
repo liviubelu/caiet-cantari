@@ -47,7 +47,7 @@ export default async function FavoritePage() {
     : "?"
 
   return (
-    <div className="bg-[#f0f2f5] flex-1">
+    <div className="bg-[#f0f2f5] dark:bg-gray-950 flex-1">
       <div className="px-4 lg:px-8 pt-safe-header lg:pt-6 pb-4">
         {/* Mobile-only header row */}
         <div className="flex items-center justify-between mb-4 lg:hidden">
@@ -67,7 +67,7 @@ export default async function FavoritePage() {
           </div>
         </div>
         {/* Desktop page title */}
-        <h1 className="hidden lg:block text-[28px] font-display font-bold text-gray-900 leading-tight mb-4">Favorite</h1>
+        <h1 className="hidden lg:block text-[28px] font-display font-bold text-gray-900 dark:text-gray-100 leading-tight mb-4">Favorite</h1>
 
         <p className="text-sm text-gray-500 italic leading-relaxed border-l-2 border-blue-400 pl-3 py-1 mb-4">
           „Voi cânta Domnului cât voi trăi, voi lăuda pe Dumnezeul meu cât voi fi." — Psalm 104:33
@@ -79,9 +79,9 @@ export default async function FavoritePage() {
             { label: "COLECȚII", value: uniqueCategories.size },
             { label: "TONALITĂȚI", value: uniqueKeys.size },
           ].map((stat) => (
-            <div key={stat.label} className="flex-1 bg-white rounded-xl p-3 text-center border border-gray-100">
-              <p className="text-lg font-bold text-gray-900">{stat.value}</p>
-              <p className="text-[10px] font-semibold tracking-widest text-gray-400 uppercase">{stat.label}</p>
+            <div key={stat.label} className="flex-1 bg-white dark:bg-gray-800 rounded-xl p-3 text-center border border-gray-100 dark:border-gray-700">
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stat.value}</p>
+              <p className="text-[10px] font-semibold tracking-widest text-gray-400 dark:text-gray-500 uppercase">{stat.label}</p>
             </div>
           ))}
         </div>

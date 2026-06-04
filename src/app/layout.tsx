@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next"
 import { Inter, Lora } from "next/font/google"
 import "./globals.css"
 import { SwRegister } from "@/components/SwRegister"
+import { ThemeProvider } from "@/components/ThemeProvider"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 const lora = Lora({ subsets: ["latin"], variable: "--font-lora" })
@@ -26,13 +27,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ro" className={`${inter.variable} ${lora.variable} h-full`}>
       <body className="h-full">
+        {/* Apply saved theme before first paint to prevent flash */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.classList.add('dark')})()` }} />
         {/* Capture beforeinstallprompt before React hydrates */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window._pwaPrompt=e;});`,
-          }}
-        />
-        {children}
+        <script dangerouslySetInnerHTML={{ __html: `window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window._pwaPrompt=e;});` }} />
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
         <SwRegister />
       </body>
     </html>

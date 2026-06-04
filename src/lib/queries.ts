@@ -2,7 +2,7 @@ import { cache } from "react"
 import { unstable_cache } from "next/cache"
 import { db } from "@/lib/db"
 import { songs } from "@/lib/schema"
-import { eq, asc, ilike, or } from "drizzle-orm"
+import { eq, asc, or, sql } from "drizzle-orm"
 
 // ── Songs list (home page) ──────────────────────────────────────────────────
 // Cached on Vercel Data Cache, tagged "songs".
@@ -25,8 +25,15 @@ export const getCachedSongs = unstable_cache(
       .$dynamic()
 
     if (q) {
+      // unaccent() normalises diacritics on both sides so "si" matches "și",
+      // "a" matches "ă", etc. ilike handles case-insensitivity.
+      const pattern = `%${q}%`
       query = query.where(
-        or(ilike(songs.title, `%${q}%`), ilike(songs.firstLine, `%${q}%`))
+        or(
+          sql`unaccent(${songs.title})     ilike unaccent(${pattern})`,
+          sql`unaccent(${songs.firstLine}) ilike unaccent(${pattern})`,
+          sql`unaccent(${songs.content})   ilike unaccent(${pattern})`
+        )
       )
     }
 

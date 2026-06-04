@@ -88,13 +88,13 @@ function SongList({
             <button
               key={song.id}
               onClick={() => onSelect(song)}
-              className="bg-white rounded-2xl px-4 py-3.5 border border-gray-100 hover:border-indigo-200 hover:shadow-sm text-left transition-all"
+              className="bg-white dark:bg-gray-800 rounded-2xl px-4 py-3.5 border border-gray-100 dark:border-gray-700 hover:border-indigo-200 dark:hover:border-indigo-700 hover:shadow-sm text-left transition-all"
             >
-              <p className="text-sm font-semibold text-gray-900 leading-tight">
+              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-tight">
                 {song.title}
               </p>
               {song.firstLine && (
-                <p className="text-xs text-gray-400 mt-0.5 truncate">{song.firstLine}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">{song.firstLine}</p>
               )}
               {!song.hasChords && (
                 <span className="inline-block mt-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-400">
@@ -125,7 +125,7 @@ function SongDetail({
   return (
     <div className="flex-1 overflow-y-auto overscroll-contain">
       {/* Top bar */}
-      <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-100 px-4 lg:px-8 py-3 flex items-center justify-between">
+      <div className="sticky top-0 z-10 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border-b border-gray-100 dark:border-gray-700 px-4 lg:px-8 py-3 flex items-center justify-between">
         <button
           onClick={onBack}
           className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900"
@@ -139,7 +139,7 @@ function SongDetail({
 
       {/* Title + category */}
       <div className="px-4 lg:px-10 pt-5 pb-4">
-        <h1 className="text-2xl font-display font-bold text-gray-900 leading-tight mb-2">
+        <h1 className="text-2xl font-display font-bold text-gray-900 dark:text-gray-100 leading-tight mb-2">
           {song.title}
         </h1>
         {cat && song.category && (
@@ -238,7 +238,7 @@ export function OfflineOverlay() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#f0f2f5] flex flex-col pl-safe pr-safe pb-safe">
+    <div className="fixed inset-0 z-50 bg-[#f0f2f5] dark:bg-gray-950 flex flex-col pl-safe pr-safe pb-safe">
       {/* Offline banner — pt-safe-bar clears the notch/Dynamic Island */}
       <div className="flex-none bg-amber-50 border-b border-amber-200 px-4 pt-safe-bar pb-2 flex items-center gap-2">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none">

@@ -40,9 +40,9 @@ export default async function HomePage({ searchParams }: Props) {
     : null
 
   return (
-    <div className="bg-[#f0f2f5] flex-1">
+    <div className="bg-[#f0f2f5] dark:bg-gray-950 flex-1">
       {/* Sticky header — full width */}
-      <div className="sticky top-0 z-40 bg-[#f0f2f5]/95 backdrop-blur-sm px-4 lg:px-8 pt-safe-header lg:pt-6 pb-3">
+      <div className="sticky top-0 z-40 bg-[#f0f2f5]/95 dark:bg-gray-950/95 backdrop-blur-sm px-4 lg:px-8 pt-safe-header lg:pt-6 pb-3">
         {/* Mobile-only header row — on desktop this is in the sidebar */}
         <div className="flex items-center justify-between mb-4 lg:hidden">
           <div className="flex items-center gap-2.5">
@@ -79,10 +79,10 @@ export default async function HomePage({ searchParams }: Props) {
           </div>
         </div>
 
-        <h1 className="text-[28px] font-display font-bold text-gray-900 leading-tight">
+        <h1 className="text-[28px] font-display font-bold text-gray-900 dark:text-gray-100 leading-tight">
           Caiet de cântări
         </h1>
-        <p className="text-sm text-gray-500 mt-0.5">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
           {allSongs.length} {allSongs.length === 1 ? "cântare" : "cântări"}
           {favSet.size > 0 && ` · ${favSet.size} favorite`}
         </p>
@@ -97,7 +97,7 @@ export default async function HomePage({ searchParams }: Props) {
               name="q"
               defaultValue={q}
               placeholder="Caută după titlu sau prima linie…"
-              className="w-full bg-white border border-gray-200 rounded-xl pl-10 pr-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition"
+              className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl pl-10 pr-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition"
             />
           </form>
         </div>
@@ -121,7 +121,7 @@ export default async function HomePage({ searchParams }: Props) {
           .sort()
           .map((letter) => (
             <div key={letter} className="mb-4">
-              <p className="text-xs font-bold text-gray-400 px-1 mb-2">{letter}</p>
+              <p className="text-xs font-bold text-gray-400 dark:text-gray-600 px-1 mb-2">{letter}</p>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
                 {grouped[letter].map((song) => (
                   <SongCard

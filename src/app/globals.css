@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Class-based dark mode: add `dark` class to <html> to activate */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-display: "Lora", Georgia, serif;
   --font-sans: "Inter", system-ui, sans-serif;
@@ -24,6 +27,15 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+.dark body {
+  background-color: #111827;
+  color: #f9fafb;
 }
 
 /* ── Safe-area utilities (viewport-fit=cover is set in root layout) ────────

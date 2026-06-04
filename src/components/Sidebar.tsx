@@ -66,17 +66,17 @@ export function Sidebar({ user }: { user: SidebarUser | null }) {
     : null
 
   return (
-    <aside className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 lg:bg-white lg:border-r lg:border-gray-200 lg:z-40">
+    <aside className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 lg:bg-white dark:lg:bg-gray-900 lg:border-r lg:border-gray-200 dark:lg:border-gray-700 lg:z-40">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-5 py-5 border-b border-gray-100">
+      <div className="flex items-center gap-3 px-5 py-5 border-b border-gray-100 dark:border-gray-700">
         <div className="w-9 h-9 bg-indigo-700 rounded-xl flex items-center justify-center flex-shrink-0">
           <ChurchIcon size={16} />
         </div>
         <div>
-          <p className="text-[9px] font-semibold tracking-widest text-gray-400 uppercase leading-none">
+          <p className="text-[9px] font-semibold tracking-widest text-gray-400 dark:text-gray-500 uppercase leading-none">
             Biserica
           </p>
-          <p className="text-sm font-bold text-gray-900 leading-tight">Bartolomeu</p>
+          <p className="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight">Bartolomeu</p>
         </div>
       </div>
 
@@ -90,8 +90,8 @@ export function Sidebar({ user }: { user: SidebarUser | null }) {
               href={item.href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                 active
-                  ? "bg-indigo-50 text-indigo-700"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  ? "bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400"
+                  : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100"
               }`}
             >
               {item.icon(active)}
@@ -100,15 +100,15 @@ export function Sidebar({ user }: { user: SidebarUser | null }) {
           )
         })}
 
-        <div className="h-px bg-gray-100 my-2" />
+        <div className="h-px bg-gray-100 dark:bg-gray-700 my-2" />
 
         {canEdit(user?.role) && (
           <Link
             href="/adauga"
             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
               pathname === "/adauga"
-                ? "bg-indigo-50 text-indigo-700"
-                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                ? "bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400"
+                : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100"
             }`}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -124,8 +124,8 @@ export function Sidebar({ user }: { user: SidebarUser | null }) {
             href="/admin"
             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
               pathname === "/admin"
-                ? "bg-indigo-50 text-indigo-700"
-                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                ? "bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400"
+                : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100"
             }`}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -138,22 +138,22 @@ export function Sidebar({ user }: { user: SidebarUser | null }) {
 
       {/* Install button */}
       <div className="px-4 pb-3">
-        <PwaInstallButton className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-dashed border-gray-200 text-xs font-semibold text-gray-500 hover:border-indigo-300 hover:text-indigo-600 transition" />
+        <PwaInstallButton className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-dashed border-gray-200 dark:border-gray-600 text-xs font-semibold text-gray-500 dark:text-gray-400 hover:border-indigo-300 hover:text-indigo-600 transition" />
       </div>
 
       {/* User section */}
-      <div className="px-3 py-4 border-t border-gray-100">
+      <div className="px-3 py-4 border-t border-gray-100 dark:border-gray-700">
         {user ? (
           <Link
             href="/cont"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors group"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
           >
             <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-[11px] font-bold text-indigo-700 flex-shrink-0">
               {initials ?? "?"}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-gray-900 truncate leading-tight">{user.name ?? "Cont"}</p>
-              <p className="text-[11px] text-gray-400 capitalize leading-tight mt-0.5">
+              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate leading-tight">{user.name ?? "Cont"}</p>
+              <p className="text-[11px] text-gray-400 dark:text-gray-500 capitalize leading-tight mt-0.5">
                 {user.role === "admin" ? "Administrator" : user.role === "instrumentist" ? "Instrumentist" : "Utilizator"}
               </p>
             </div>

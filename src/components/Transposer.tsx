@@ -36,11 +36,11 @@ export function Transposer({ defaultKey, semitones, onChange }: Props) {
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-[11px] font-semibold tracking-wider text-gray-400 uppercase">Gamă</span>
+      <span className="text-[11px] font-semibold tracking-wider text-gray-400 dark:text-gray-500 uppercase">Gamă</span>
       <select
         value={currentRoot}
         onChange={(e) => handleChange(e.target.value)}
-        className="bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-gray-900 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition appearance-none pr-7 bg-[right_8px_center] bg-no-repeat"
+        className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-gray-900 dark:text-gray-100 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition appearance-none pr-7 bg-[right_8px_center] bg-no-repeat"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M6 9l6 6 6-6' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
         }}

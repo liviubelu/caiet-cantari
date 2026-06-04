@@ -23,11 +23,11 @@ export function SongCard({ song, favorited = false, showCategory = false, authen
   const cat = getCategoryColor(song.category)
 
   return (
-    <div className="flex items-center gap-3 bg-white rounded-xl px-4 py-3.5 border border-gray-100 shadow-[0_1px_3px_0_rgba(0,0,0,0.04)]">
+    <div className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-xl px-4 py-3.5 border border-gray-100 dark:border-gray-700 shadow-[0_1px_3px_0_rgba(0,0,0,0.04)]">
       <Link href={`/song/${song.id}`} className="flex-1 min-w-0">
-        <p className="font-semibold text-gray-900 text-sm leading-tight truncate">{song.title}</p>
+        <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-tight truncate">{song.title}</p>
         {song.firstLine && (
-          <p className="text-gray-400 text-xs mt-0.5 truncate">{song.firstLine}</p>
+          <p className="text-gray-400 dark:text-gray-500 text-xs mt-0.5 truncate">{song.firstLine}</p>
         )}
         {showCategory && song.category && (
           <span
@@ -38,7 +38,7 @@ export function SongCard({ song, favorited = false, showCategory = false, authen
           </span>
         )}
         {song.hasChords === false && (
-          <span className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-400">
+          <span className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
               <path d="M9 18V5l12-2v13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               <circle cx="6" cy="18" r="3" stroke="currentColor" strokeWidth="2"/>

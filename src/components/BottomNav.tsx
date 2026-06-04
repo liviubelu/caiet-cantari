@@ -99,7 +99,7 @@ export function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
-      <div className="w-full bg-white border-t border-gray-200 pb-safe pl-safe pr-safe">
+      <div className="w-full bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 pb-safe pl-safe pr-safe">
         <div className="flex">
           {tabs.map((tab) => {
             const active = pathname === tab.href
@@ -108,7 +108,7 @@ export function BottomNav() {
                 key={tab.href}
                 href={tab.href}
                 className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors ${
-                  active ? "text-gray-900" : "text-gray-400"
+                  active ? "text-gray-900 dark:text-gray-100" : "text-gray-400 dark:text-gray-500"
                 }`}
               >
                 {tab.icon(active)}

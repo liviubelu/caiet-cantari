@@ -31,13 +31,13 @@ export default async function ColectiiPage() {
   )
 
   return (
-    <div className="bg-[#f0f2f5] flex-1">
+    <div className="bg-[#f0f2f5] dark:bg-gray-950 flex-1">
       <div className="px-4 lg:px-8 pt-safe-header lg:pt-6 pb-4">
-        <p className="text-[10px] font-semibold tracking-widest text-gray-400 uppercase mb-1">
+        <p className="text-[10px] font-semibold tracking-widest text-gray-400 dark:text-gray-500 uppercase mb-1">
           Bibliotecă
         </p>
-        <h1 className="text-[28px] font-display font-bold text-gray-900">Colecții</h1>
-        <p className="text-sm text-gray-500 mt-1">Cântările grupate după tipul lor.</p>
+        <h1 className="text-[28px] font-display font-bold text-gray-900 dark:text-gray-100">Colecții</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Cântările grupate după tipul lor.</p>
       </div>
 
       <div className="px-4 lg:px-8">

@@ -1,6 +1,6 @@
 export default function FavoriteLoading() {
   return (
-    <div className="bg-[#f0f2f5] flex-1 animate-pulse">
+    <div className="bg-[#f0f2f5] dark:bg-gray-950 flex-1 animate-pulse">
       <div className="px-4 lg:px-8 pt-safe-header lg:pt-6 pb-4">
         {/* Mobile header */}
         <div className="flex items-center justify-between mb-4 lg:hidden">
@@ -22,7 +22,7 @@ export default function FavoriteLoading() {
         {/* Stats */}
         <div className="flex gap-4 mb-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="flex-1 bg-white rounded-xl p-3 border border-gray-100 space-y-2">
+            <div key={i} className="flex-1 bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-100 space-y-2">
               <div className="h-5 w-6 bg-gray-200 rounded mx-auto" />
               <div className="h-2.5 bg-gray-100 rounded w-3/4 mx-auto" />
             </div>

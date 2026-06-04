@@ -60,7 +60,7 @@ function LineItem({
 
   if (!line.hasChords || !showChords) {
     return (
-      <div key={idx} className="leading-6 text-gray-900">
+      <div key={idx} className="leading-6 text-gray-900 dark:text-gray-100">
         {line.segments.map((s, j) => (
           <span key={j}>{s.text}</span>
         ))}
@@ -73,12 +73,12 @@ function LineItem({
       {line.segments.map((seg, j) => (
         <span key={j} className="inline-flex flex-col">
           <span
-            className="font-bold text-blue-600 leading-none mb-0.5 pr-2"
+            className="font-bold text-blue-600 dark:text-blue-400 leading-none mb-0.5 pr-2"
             style={{ fontSize: `${Math.round(fontSize * 0.85)}px` }}
           >
             {seg.chord ?? " "}
           </span>
-          <span className="text-gray-900 leading-6 whitespace-pre">
+          <span className="text-gray-900 dark:text-gray-100 leading-6 whitespace-pre">
             {seg.text || (seg.chord ? "​" : "")}
           </span>
         </span>

@@ -35,7 +35,9 @@
       "Bash(node scripts/import-md.mjs --dry-run)",
       "Bash(node scripts/import-md.mjs)",
       "Bash(node -e \"require\\('postgres'\\)\")",
-      "Bash(dir /s /b \"C:\\\\Users\\\\liviu\\\\Desktop\\\\CaietCantari\\\\src\\\\*.tsx\" \"C:\\\\Users\\\\liviu\\\\Desktop\\\\CaietCantari\\\\src\\\\*.css\")"
+      "Bash(dir /s /b \"C:\\\\Users\\\\liviu\\\\Desktop\\\\CaietCantari\\\\src\\\\*.tsx\" \"C:\\\\Users\\\\liviu\\\\Desktop\\\\CaietCantari\\\\src\\\\*.css\")",
+      "Bash(node -e \"console.log\\(require\\('./node_modules/next/package.json'\\).version\\)\")",
+      "Bash(git checkout *)"
     ]
   }
 }

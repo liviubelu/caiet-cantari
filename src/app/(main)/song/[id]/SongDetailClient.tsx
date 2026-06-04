@@ -61,25 +61,25 @@ export function SongDetailClient({ content, defaultKey, songId, isFavorited, isA
   return (
     <div>
       {/* Controls bar */}
-      <div className="px-4 py-3 border-t border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
+      <div className="px-4 py-3 border-t border-b border-gray-100 dark:border-gray-700 flex items-center justify-between gap-3 flex-wrap">
         <Transposer defaultKey={defaultKey} semitones={semitones} onChange={setSemitones} />
 
         <div className="flex items-center gap-2">
           {/* Font size */}
-          <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+          <div className="flex items-center border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
             <button
               onClick={() => changeFontSize(-FONT_STEP)}
               disabled={fontSize <= FONT_MIN}
-              className="px-2.5 py-1.5 text-xs font-bold text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition"
+              className="px-2.5 py-1.5 text-xs font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-30 transition"
               title="Micșorează textul"
             >
               A−
             </button>
-            <div className="w-px h-4 bg-gray-200" />
+            <div className="w-px h-4 bg-gray-200 dark:bg-gray-600" />
             <button
               onClick={() => changeFontSize(+FONT_STEP)}
               disabled={fontSize >= FONT_MAX}
-              className="px-2.5 py-1.5 text-sm font-bold text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition"
+              className="px-2.5 py-1.5 text-sm font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-30 transition"
               title="Mărește textul"
             >
               A+
@@ -91,8 +91,8 @@ export function SongDetailClient({ content, defaultKey, songId, isFavorited, isA
             onClick={toggleColumns}
             className={`hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
               twoColumns
-                ? "bg-indigo-50 border-indigo-200 text-indigo-700"
-                : "bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-200"
+                ? "bg-indigo-50 dark:bg-indigo-950 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-400"
+                : "bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
             }`}
             title={twoColumns ? "O coloană" : "Două coloane"}
           >
@@ -108,8 +108,8 @@ export function SongDetailClient({ content, defaultKey, songId, isFavorited, isA
             onClick={() => setShowChords(!showChords)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
               showChords
-                ? "bg-blue-50 border-blue-200 text-blue-700"
-                : "bg-gray-100 border-gray-200 text-gray-600"
+                ? "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400"
+                : "bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300"
             }`}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none">

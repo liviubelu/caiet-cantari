@@ -40,9 +40,9 @@ export default async function SongPage({ params }: Props) {
   const cat = getCategoryColor(song.category)
 
   return (
-    <div className="bg-[#f0f2f5] flex-1 flex flex-col">
+    <div className="bg-[#f0f2f5] dark:bg-gray-950 flex-1 flex flex-col">
       {/* Sticky gray nav bar — sits above the white card */}
-      <div className="sticky top-0 z-40 bg-[#f0f2f5]/95 backdrop-blur-sm px-4 lg:px-6 pt-safe-bar pb-3 lg:pt-3 flex items-center justify-between">
+      <div className="sticky top-0 z-40 bg-[#f0f2f5]/95 dark:bg-gray-950/95 backdrop-blur-sm px-4 lg:px-6 pt-safe-bar pb-3 lg:pt-3 flex items-center justify-between">
         <BackButton />
         <div className="flex items-center gap-2">
           {session?.user && canEditSongs(session.user.role) && (
@@ -57,11 +57,11 @@ export default async function SongPage({ params }: Props) {
           px-3 lg:px-6 = gray margin left/right
           pb-3 = gray margin below the card */}
       <div className="px-3 lg:px-6 pb-3 flex-1 flex flex-col">
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden flex-1">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden flex-1">
 
           {/* Title + category */}
           <div className="px-5 pt-5 pb-4">
-            <h1 className="text-2xl font-display font-bold text-gray-900 leading-tight mb-2">
+            <h1 className="text-2xl font-display font-bold text-gray-900 dark:text-gray-100 leading-tight mb-2">
               {song.title}
             </h1>
             <div className="flex items-center gap-2 flex-wrap">
