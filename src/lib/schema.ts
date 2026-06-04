@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, unique } from "drizzle-orm/pg-core"
+import { pgTable, text, timestamp, uuid, unique, boolean } from "drizzle-orm/pg-core"
 
 export type UserRole = "admin" | "instrumentist" | "user"
 
@@ -29,6 +29,7 @@ export const songs = pgTable("songs", {
   defaultKey: text("default_key"),
   createdBy: uuid("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
+  hasChords: boolean("has_chords").notNull().default(false),
 })
 
 export const passwordResetTokens = pgTable("password_reset_tokens", {

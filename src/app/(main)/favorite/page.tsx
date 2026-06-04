@@ -14,13 +14,18 @@ export default async function FavoritePage() {
   const session = await getSession()
   if (!session?.user?.id) redirect("/login")
 
-  const rows = await db
-    .select({ song: songs })
+  const favSongs = await db
+    .select({
+      id: songs.id,
+      title: songs.title,
+      firstLine: songs.firstLine,
+      category: songs.category,
+      defaultKey: songs.defaultKey,
+      hasChords: songs.hasChords,
+    })
     .from(favorites)
     .innerJoin(songs, eq(favorites.songId, songs.id))
     .where(eq(favorites.userId, session.user.id))
-
-  const favSongs = rows.map((r) => r.song)
 
   const grouped = favSongs.reduce<Record<string, typeof favSongs>>((acc, song) => {
     const cat = song.category ?? "Altele"

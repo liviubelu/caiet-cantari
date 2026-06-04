@@ -25,9 +25,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   }
 
   const firstLine = extractFirstLine(content)
+  const hasChords = content.includes("[")
   const [song] = await db
     .update(songs)
-    .set({ title, content, firstLine, category, defaultKey })
+    .set({ title, content, firstLine, category, defaultKey, hasChords })
     .where(eq(songs.id, id))
     .returning()
 

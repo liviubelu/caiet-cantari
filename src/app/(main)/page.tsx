@@ -16,7 +16,14 @@ interface Props {
 export default async function HomePage({ searchParams }: Props) {
   const [session, { q }] = await Promise.all([getSession(), searchParams])
 
-  let query = db.select().from(songs).orderBy(asc(songs.title)).$dynamic()
+  let query = db.select({
+    id: songs.id,
+    title: songs.title,
+    firstLine: songs.firstLine,
+    category: songs.category,
+    defaultKey: songs.defaultKey,
+    hasChords: songs.hasChords,
+  }).from(songs).orderBy(asc(songs.title)).$dynamic()
   if (q) {
     query = query.where(or(ilike(songs.title, `%${q}%`), ilike(songs.firstLine, `%${q}%`)))
   }
@@ -129,7 +136,7 @@ export default async function HomePage({ searchParams }: Props) {
                 {grouped[letter].map((song) => (
                   <SongCard
                     key={song.id}
-                    song={{ ...song, hasChords: song.content?.includes("[") }}
+                    song={song}
                     favorited={favSet.has(song.id)}
                     authenticated={!!session?.user}
                   />

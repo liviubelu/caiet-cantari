@@ -33,9 +33,10 @@ export async function POST(req: Request) {
   }
 
   const firstLine = extractFirstLine(content)
+  const hasChords = content.includes("[")
   const [song] = await db
     .insert(songs)
-    .values({ title, content, firstLine, category, defaultKey, createdBy: session.user.id })
+    .values({ title, content, firstLine, category, defaultKey, createdBy: session.user.id, hasChords })
     .returning()
 
   return NextResponse.json(song, { status: 201 })
