@@ -40,6 +40,6 @@ export async function POST(req: Request) {
     .values({ title, content, firstLine, category, defaultKey, createdBy: session.user.id, hasChords })
     .returning()
 
-  revalidateTag("songs")
+  revalidateTag("songs", { expire: 0 })
   return NextResponse.json(song, { status: 201 })
 }
