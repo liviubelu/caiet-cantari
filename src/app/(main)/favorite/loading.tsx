@@ -1,15 +1,17 @@
 export default function FavoriteLoading() {
   return (
-    <div className="lg:max-w-2xl lg:mx-auto animate-pulse">
-      <div className="px-4 pt-12 lg:pt-6 pb-4">
+    <div className="bg-[#f0f2f5] flex-1 animate-pulse">
+      <div className="px-4 lg:px-8 pt-12 lg:pt-6 pb-4">
         {/* Mobile header */}
         <div className="flex items-center justify-between mb-4 lg:hidden">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-gray-200 rounded-lg" />
-            <div className="h-4 w-32 bg-gray-200 rounded" />
+            <div className="w-8 h-8 bg-gray-300 rounded-lg" />
+            <div className="h-4 w-32 bg-gray-300 rounded" />
           </div>
-          <div className="w-8 h-8 bg-gray-200 rounded-full" />
+          <div className="w-8 h-8 bg-gray-300 rounded-full" />
         </div>
+        {/* Desktop title */}
+        <div className="hidden lg:block h-7 w-32 bg-gray-300 rounded mb-4" />
 
         {/* Quote placeholder */}
         <div className="border-l-2 border-gray-200 pl-3 py-1 mb-4 space-y-1.5">
@@ -28,12 +30,12 @@ export default function FavoriteLoading() {
         </div>
       </div>
 
-      {/* Song cards */}
-      <div className="px-4 space-y-5">
+      {/* Song cards — matches the grid layout of the real page */}
+      <div className="px-4 lg:px-8">
         {[3, 2].map((count, gi) => (
-          <div key={gi}>
-            <div className="h-3 w-16 bg-gray-200 rounded mb-2" />
-            <div className="space-y-2">
+          <div key={gi} className="mb-5">
+            <div className="h-3 w-16 bg-gray-300 rounded mb-2" />
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
               {Array.from({ length: count }).map((_, i) => (
                 <div key={i} className="bg-white rounded-2xl px-4 py-3.5 border border-gray-100 flex items-center gap-3">
                   <div className="flex-1 space-y-2">
