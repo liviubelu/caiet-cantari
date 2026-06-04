@@ -158,7 +158,8 @@ export function SongForm({ songId, initialValues }: Props) {
                 {NOTES.map((n) => (
                   <option key={n} value={n}>{n}</option>
                 ))}
-                {["Dm", "Em", "Am", "Bm", "Cm", "Fm", "Gm", "F#m", "C#m", "G#m", "Bbm"].map((n) => (
+                {/* All 12 minor keys in chromatic order */}
+                {["Am", "Bbm", "Bm", "Cm", "C#m", "Dm", "Ebm", "Em", "Fm", "F#m", "Gm", "Abm"].map((n) => (
                   <option key={n} value={n}>{n}</option>
                 ))}
               </select>
