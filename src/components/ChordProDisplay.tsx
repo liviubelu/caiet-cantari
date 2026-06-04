@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo } from "react"
-import { parseChordPro, type ParsedLine } from "@/lib/chordpro"
+import { parseChordPro, type ParsedLine, type Segment } from "@/lib/chordpro"
 import { transposeContent } from "@/lib/transpose"
 
 interface Props {
