@@ -18,18 +18,16 @@ interface Props {
 
 export async function generateMetadata({ params }: Props) {
   const { id } = await params
-  const song = await getSongById(id) // cached — no extra DB hit if page also calls it
+  const song = await getSongById(id)
   return { title: song?.title ?? "Melodie" }
 }
 
 export default async function SongPage({ params }: Props) {
   const { id } = await params
 
-  // Run session + song fetch in parallel; song uses React cache so generateMetadata shares it
   const [session, song] = await Promise.all([getSession(), getSongById(id)])
   if (!song) notFound()
 
-  // Fetch favorite status only if user is logged in
   const [fav] = session?.user?.id
     ? await db
         .select()
@@ -39,13 +37,12 @@ export default async function SongPage({ params }: Props) {
     : []
 
   const isFavorited = !!fav
-
   const cat = getCategoryColor(song.category)
 
   return (
-    <div className="bg-white flex-1 relative after:absolute after:content-[''] after:top-full after:left-0 after:right-0 after:h-32 after:bg-white lg:after:h-12">
-      {/* Sticky top bar — full width */}
-      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-100 px-4 lg:px-8 pt-safe-bar pb-3 lg:pt-3 flex items-center justify-between">
+    <div className="bg-[#f0f2f5] flex-1">
+      {/* Sticky gray nav bar — sits above the white card */}
+      <div className="sticky top-0 z-40 bg-[#f0f2f5]/95 backdrop-blur-sm px-4 lg:px-6 pt-safe-bar pb-3 lg:pt-3 flex items-center justify-between">
         <BackButton />
         <div className="flex items-center gap-2">
           {session?.user && canEditSongs(session.user.role) && (
@@ -56,30 +53,40 @@ export default async function SongPage({ params }: Props) {
         </div>
       </div>
 
-      {/* Title + category */}
-      <div className="px-4 lg:px-10 pt-5 pb-4">
-        <h1 className="text-2xl font-display font-bold text-gray-900 leading-tight mb-2">
-          {song.title}
-        </h1>
-        <div className="flex items-center gap-2 flex-wrap">
-          {song.category && (
-            <span
-              className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
-              style={{ backgroundColor: cat.light, color: cat.color }}
-            >
-              {song.category}
-            </span>
-          )}
+      {/* White card framed by the gray background on all sides.
+          px-3 lg:px-6 = gray margin left/right
+          pb-3 = gray margin below the card */}
+      <div className="px-3 lg:px-6 pb-3">
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+
+          {/* Title + category */}
+          <div className="px-5 pt-5 pb-4">
+            <h1 className="text-2xl font-display font-bold text-gray-900 leading-tight mb-2">
+              {song.title}
+            </h1>
+            <div className="flex items-center gap-2 flex-wrap">
+              {song.category && (
+                <span
+                  className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
+                  style={{ backgroundColor: cat.light, color: cat.color }}
+                >
+                  {song.category}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Controls + lyrics — rendered by the client component */}
+          <SongDetailClient
+            content={song.content}
+            defaultKey={song.defaultKey}
+            songId={song.id}
+            isFavorited={isFavorited}
+            isAuthenticated={!!session?.user}
+          />
+
         </div>
       </div>
-
-      <SongDetailClient
-        content={song.content}
-        defaultKey={song.defaultKey}
-        songId={song.id}
-        isFavorited={isFavorited}
-        isAuthenticated={!!session?.user}
-      />
     </div>
   )
 }

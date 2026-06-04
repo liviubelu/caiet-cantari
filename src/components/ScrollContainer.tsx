@@ -137,14 +137,10 @@ export function ScrollContainer({ children }: { children: React.ReactNode }) {
     }
   }, [pathname])
 
-  // Song pages are fully white (content + overscroll bounce areas).
-  // All other pages use the app's gray background.
-  const bg = pathname.startsWith("/song/") ? "bg-white" : "bg-[#f0f2f5]"
-
   return (
     <div
       ref={ref}
-      className={`lg:pl-64 h-full overflow-y-auto overscroll-contain ${bg}`}
+      className="lg:pl-64 h-full overflow-y-auto overscroll-contain bg-[#f0f2f5]"
     >
       {children}
     </div>
