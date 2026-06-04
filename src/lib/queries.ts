@@ -70,3 +70,24 @@ const getSongByIdPersisted = unstable_cache(
 )
 
 export const getSongById = cache(getSongByIdPersisted)
+
+// ── All songs for offline sync endpoint ────────────────────────────────────
+// Includes content so devices can display songs without internet.
+// Tagged "songs" — cleared immediately when any song is added/edited/deleted.
+export const getCachedSongsAll = unstable_cache(
+  async () =>
+    db
+      .select({
+        id: songs.id,
+        title: songs.title,
+        firstLine: songs.firstLine,
+        category: songs.category,
+        defaultKey: songs.defaultKey,
+        content: songs.content,
+        hasChords: songs.hasChords,
+      })
+      .from(songs)
+      .orderBy(asc(songs.title)),
+  ["songs-all"],
+  { tags: ["songs"] }
+)

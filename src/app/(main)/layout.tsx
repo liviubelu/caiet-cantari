@@ -4,6 +4,8 @@ import { getSession } from "@/lib/session"
 import { BottomNav } from "@/components/BottomNav"
 import { Sidebar } from "@/components/Sidebar"
 import { ScrollContainer } from "@/components/ScrollContainer"
+import { OfflineSync } from "@/components/OfflineSync"
+import { OfflineOverlay } from "@/components/OfflineOverlay"
 
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession()
@@ -23,6 +25,10 @@ export default async function MainLayout({ children }: { children: React.ReactNo
 
       {/* Mobile bottom nav — hidden on desktop */}
       <BottomNav />
+
+      {/* Offline support — invisible sync + full-screen overlay when offline */}
+      <OfflineSync />
+      <OfflineOverlay />
     </div>
   )
 }
