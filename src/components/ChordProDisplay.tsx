@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo } from "react"
-import { parseChordPro, type ParsedLine, type Segment } from "@/lib/chordpro"
+import { parseChordPro, type ParsedLine } from "@/lib/chordpro"
 import { transposeContent } from "@/lib/transpose"
 
 interface Props {
@@ -12,31 +12,10 @@ interface Props {
   twoColumns?: boolean
 }
 
-/**
- * Group consecutive segments that belong to the same word into a single array.
- * A word boundary is detected when a segment's text ends with whitespace.
- * This prevents an inline-block line-break from splitting a word whose
- * syllables carry different chords (e.g. "m" + "[G]ă" → keep together).
- */
-function groupByWord(segments: Segment[]): Segment[][] {
-  const groups: Segment[][] = []
-  let current: Segment[] = []
-  for (const seg of segments) {
-    current.push(seg)
-    if (/\s$/.test(seg.text)) {
-      groups.push(current)
-      current = []
-    }
-  }
-  if (current.length > 0) groups.push(current)
-  return groups
-}
-
 /** Split lines near the midpoint, preferring to break before a section header */
 function splitAtMidpoint(lines: ParsedLine[]): [ParsedLine[], ParsedLine[]] {
   const mid = Math.ceil(lines.length / 2)
 
-  // Look up to 5 lines around mid for a section header to start the right column on
   for (let offset = 0; offset <= 5; offset++) {
     const after = mid + offset
     if (after < lines.length && lines[after].isComment) {
@@ -78,17 +57,8 @@ function LineItem({
   const isEmpty = line.segments.every((s) => !s.chord && !s.text.trim())
   if (isEmpty) return <div key={idx} className="h-3" />
 
-  // Hanging indent: first row starts at the left edge, continuation rows
-  // are indented by 1em. Works for both lyrics-only and chord+lyrics because
-  // both use block containers with inline(-block) content.
-  //
-  // For lyrics-only: standard CSS text-indent on a block with inline spans.
-  //
-  // For chord lines: segments are rendered as inline-blocks (not flex items)
-  // so the container's text-indent applies to the first LINE BOX, creating
-  // the same hanging-indent effect. indent-0 on each segment resets the
-  // inherited text-indent so chord/text content inside is unaffected.
-
+  // ── Lyrics-only (no chords visible) ──────────────────────────────────────
+  // Standard CSS hanging indent: first line at left edge, continuations +1em.
   if (!line.hasChords || !showChords) {
     return (
       <div key={idx} className="leading-6 text-gray-900 pl-[1em] [text-indent:-1em]">
@@ -99,26 +69,39 @@ function LineItem({
     )
   }
 
-  // Group segments by word so that syllables of the same word
-  // (e.g. "m" + "[G]ă") live in one outer inline-block and cannot
-  // be separated by a line break.
+  // ── Chord + lyrics ────────────────────────────────────────────────────────
+  // Each segment is a position:relative inline span. The chord is absolutely
+  // positioned above it (bottom: 100%). Text flows naturally — no whitespace-pre,
+  // no inline-block — so long lines wrap at spaces without splitting syllables.
+  //
+  // The key insight for "m[G]ă": "m" (end of seg-1) and "ă" (start of seg-2)
+  // are adjacent inline spans with no whitespace between them, so the browser
+  // will never insert a line break between them. They always land on the same
+  // visual line, regardless of where the wrap happens.
+  //
+  // line-height is enlarged to give the absolute chord room above each text line.
+  // Hanging indent (pl-[1em] + text-indent:-1em) applies to the block container
+  // because all children are inline spans (first LINE BOX is shifted).
+  const chordFontSize = Math.round(fontSize * 0.85)
+  const lineHeight = Math.round(fontSize * 0.9 + chordFontSize + 4) // text + chord + gap
+
   return (
-    <div key={idx} className="pl-[1em] [text-indent:-1em] leading-none mb-1">
-      {groupByWord(line.segments).map((group, gi) => (
-        <span key={gi} className="inline-block align-bottom indent-0">
-          {group.map((seg, j) => (
-            <span key={j} className="inline-block align-bottom">
-              <span
-                className="block font-bold text-blue-600 leading-none mb-0.5 pr-2"
-                style={{ fontSize: `${Math.round(fontSize * 0.85)}px` }}
-              >
-                {seg.chord ?? " "}
-              </span>
-              <span className="text-gray-900 leading-6 whitespace-pre">
-                {seg.text || (seg.chord ? "​" : "")}
-              </span>
+    <div
+      key={idx}
+      className="text-gray-900 pl-[1em] [text-indent:-1em] mb-1"
+      style={{ lineHeight: `${lineHeight}px` }}
+    >
+      {line.segments.map((seg, j) => (
+        <span key={j} className="relative">
+          {seg.chord && (
+            <span
+              className="absolute bottom-full left-0 font-bold text-blue-600 leading-none whitespace-nowrap"
+              style={{ fontSize: `${chordFontSize}px`, paddingRight: "0.5rem" }}
+            >
+              {seg.chord}
             </span>
-          ))}
+          )}
+          {seg.text || (seg.chord ? "​" : "")}
         </span>
       ))}
     </div>
