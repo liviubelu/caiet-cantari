@@ -40,7 +40,7 @@ export default async function SongPage({ params }: Props) {
   const cat = getCategoryColor(song.category)
 
   return (
-    <div className="bg-[#f0f2f5] flex-1">
+    <div className="bg-[#f0f2f5] flex-1 flex flex-col">
       {/* Sticky gray nav bar — sits above the white card */}
       <div className="sticky top-0 z-40 bg-[#f0f2f5]/95 backdrop-blur-sm px-4 lg:px-6 pt-safe-bar pb-3 lg:pt-3 flex items-center justify-between">
         <BackButton />
@@ -56,8 +56,8 @@ export default async function SongPage({ params }: Props) {
       {/* White card framed by the gray background on all sides.
           px-3 lg:px-6 = gray margin left/right
           pb-3 = gray margin below the card */}
-      <div className="px-3 lg:px-6 pb-3">
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+      <div className="px-3 lg:px-6 pb-3 flex-1 flex flex-col">
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden flex-1">
 
           {/* Title + category */}
           <div className="px-5 pt-5 pb-4">

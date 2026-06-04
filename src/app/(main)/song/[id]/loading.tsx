@@ -1,6 +1,6 @@
 export default function SongLoading() {
   return (
-    <div className="bg-[#f0f2f5] flex-1 animate-pulse">
+    <div className="bg-[#f0f2f5] flex-1 flex flex-col animate-pulse">
       {/* Sticky gray nav bar */}
       <div className="sticky top-0 z-40 bg-[#f0f2f5]/95 px-4 lg:px-6 pt-safe-bar pb-3 lg:pt-3 flex items-center justify-between">
         <div className="h-4 w-16 bg-gray-300 rounded" />
@@ -8,8 +8,8 @@ export default function SongLoading() {
       </div>
 
       {/* White card */}
-      <div className="px-3 lg:px-6 pb-3">
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+      <div className="px-3 lg:px-6 pb-3 flex-1 flex flex-col">
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden flex-1">
 
           {/* Title area */}
           <div className="px-5 pt-5 pb-4">
