@@ -26,19 +26,19 @@ export default async function AdminPage() {
     .orderBy(asc(users.createdAt))
 
   return (
-    <div className="min-h-screen bg-[#f0f2f5]">
-      <div className="max-w-2xl mx-auto px-4 pt-12 pb-8">
+    <div className="min-h-screen bg-[#f0f2f5] dark:bg-gray-950">
+      <div className="max-w-2xl mx-auto px-4 pt-safe-header pb-8 lg:pt-12">
         <div className="flex items-center gap-3 mb-6">
-          <Link href="/" className="text-gray-400 hover:text-gray-600">
+          <Link href="/cont" className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
               <path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </Link>
           <div>
-            <p className="text-[10px] font-semibold tracking-widest text-gray-400 uppercase">
+            <p className="text-[10px] font-semibold tracking-widest text-gray-400 dark:text-gray-500 uppercase">
               Administrator
             </p>
-            <h1 className="text-2xl font-display font-bold text-gray-900">Utilizatori</h1>
+            <h1 className="text-2xl font-display font-bold text-gray-900 dark:text-gray-100">Utilizatori</h1>
           </div>
         </div>
 

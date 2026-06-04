@@ -12,13 +12,15 @@ type User = {
   createdAt: Date | null
 }
 
-const ROLE_LABELS: Record<string, { label: string; color: string }> = {
-  admin:        { label: "Admin",         color: "bg-indigo-100 text-indigo-700" },
-  instrumentist:{ label: "Instrumentist", color: "bg-amber-100 text-amber-700" },
-  user:         { label: "Utilizator",    color: "bg-gray-100 text-gray-600" },
+const ROLE_LABELS: Record<string, { label: string; light: string; dark: string }> = {
+  admin:        { label: "Admin",         light: "bg-indigo-100 text-indigo-700", dark: "dark:bg-indigo-950 dark:text-indigo-400" },
+  instrumentist:{ label: "Instrumentist", light: "bg-amber-100 text-amber-700",   dark: "dark:bg-amber-950 dark:text-amber-400" },
+  user:         { label: "Utilizator",    light: "bg-gray-100 text-gray-600",     dark: "dark:bg-gray-700 dark:text-gray-300" },
 }
 
 const EMPTY_FORM = { email: "", firstName: "", lastName: "", password: "", role: "user" }
+
+const INPUT = "w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition"
 
 export function AdminUsersClient({ initialUsers }: { initialUsers: User[] }) {
   const [userList, setUserList] = useState(initialUsers)
@@ -76,9 +78,9 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: User[] }) {
           { label: "Verificați", value: verified.length },
           { label: "Instrum.",   value: userList.filter((u) => u.role === "instrumentist").length },
         ].map((s) => (
-          <div key={s.label} className="bg-white rounded-xl p-4 text-center border border-gray-100">
-            <p className="text-2xl font-bold text-gray-900">{s.value}</p>
-            <p className="text-[11px] text-gray-400 uppercase tracking-wider font-semibold mt-0.5">{s.label}</p>
+          <div key={s.label} className="bg-white dark:bg-gray-800 rounded-xl p-4 text-center border border-gray-100 dark:border-gray-700">
+            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{s.value}</p>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-semibold mt-0.5">{s.label}</p>
           </div>
         ))}
       </div>
@@ -86,7 +88,7 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: User[] }) {
       {/* Add user button */}
       <button
         onClick={() => { setShowAddForm((v) => !v); setFormError("") }}
-        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-gray-200 text-sm font-semibold text-gray-500 hover:border-indigo-300 hover:text-indigo-600 transition"
+        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-600 text-sm font-semibold text-gray-500 dark:text-gray-400 hover:border-indigo-300 dark:hover:border-indigo-600 hover:text-indigo-600 dark:hover:text-indigo-400 transition"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
           <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
@@ -96,20 +98,20 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: User[] }) {
 
       {/* Add user form */}
       {showAddForm && (
-        <form onSubmit={addUser} className="bg-white rounded-xl p-4 border border-indigo-100 space-y-3">
-          <p className="text-xs font-semibold tracking-widest text-gray-400 uppercase mb-1">Cont nou</p>
+        <form onSubmit={addUser} className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-indigo-100 dark:border-indigo-800 space-y-3">
+          <p className="text-xs font-semibold tracking-widest text-gray-400 dark:text-gray-500 uppercase mb-1">Cont nou</p>
           <div className="flex gap-2">
             <input
               value={form.firstName}
               onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
               placeholder="Prenume"
-              className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+              className={INPUT}
             />
             <input
               value={form.lastName}
               onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
               placeholder="Nume"
-              className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+              className={INPUT}
             />
           </div>
           <input
@@ -118,7 +120,7 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: User[] }) {
             onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
             placeholder="email@exemplu.com"
             required
-            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+            className={INPUT}
           />
           <div className="relative">
             <input
@@ -127,12 +129,12 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: User[] }) {
               onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
               placeholder="Parolă temporară (min. 6 caractere)"
               required
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 pr-16"
+              className={`${INPUT} pr-16`}
             />
             <button
               type="button"
               onClick={() => setShowPass((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
             >
               {showPass ? "Ascunde" : "Arată"}
             </button>
@@ -140,12 +142,12 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: User[] }) {
           <select
             value={form.role}
             onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
-            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400 bg-white"
+            className={INPUT}
           >
             <option value="user">Utilizator</option>
             <option value="instrumentist">Instrumentist</option>
           </select>
-          {formError && <p className="text-sm text-red-500">{formError}</p>}
+          {formError && <p className="text-sm text-red-500 dark:text-red-400">{formError}</p>}
           <button
             type="submit"
             disabled={formLoading}
@@ -158,7 +160,7 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: User[] }) {
 
       {/* Verified users */}
       <div>
-        <p className="text-xs font-semibold tracking-widest text-gray-400 uppercase mb-2">
+        <p className="text-xs font-semibold tracking-widest text-gray-400 dark:text-gray-500 uppercase mb-2">
           Conturi active
         </p>
         <div className="space-y-2">
@@ -166,16 +168,16 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: User[] }) {
             const info = ROLE_LABELS[user.role] ?? ROLE_LABELS.user
             const name = [user.firstName, user.lastName].filter(Boolean).join(" ") || "—"
             return (
-              <div key={user.id} className="bg-white rounded-xl px-4 py-3 border border-gray-100 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 flex-shrink-0">
+              <div key={user.id} className="bg-white dark:bg-gray-800 rounded-xl px-4 py-3 border border-gray-100 dark:border-gray-700 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-500 dark:text-gray-300 flex-shrink-0">
                   {name !== "—" ? name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase() : "?"}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 truncate">{name}</p>
-                  <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{name}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{user.email}</p>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${info.color}`}>
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${info.light} ${info.dark}`}>
                     {info.label}
                   </span>
                   {user.role !== "admin" && (
@@ -183,7 +185,7 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: User[] }) {
                       value={user.role}
                       disabled={loading === user.id}
                       onChange={(e) => changeRole(user.id, e.target.value)}
-                      className="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white focus:outline-none focus:border-indigo-400 disabled:opacity-50"
+                      className="text-xs bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-lg px-2 py-1 focus:outline-none focus:border-indigo-400 disabled:opacity-50"
                     >
                       <option value="user">Utilizator</option>
                       <option value="instrumentist">Instrumentist</option>
@@ -194,7 +196,7 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: User[] }) {
             )
           })}
           {verified.length === 0 && (
-            <p className="text-sm text-gray-400 text-center py-4">Niciun utilizator verificat.</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">Niciun utilizator verificat.</p>
           )}
         </div>
       </div>
@@ -202,21 +204,21 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: User[] }) {
       {/* Pending */}
       {pending.length > 0 && (
         <div>
-          <p className="text-xs font-semibold tracking-widest text-gray-400 uppercase mb-2">
+          <p className="text-xs font-semibold tracking-widest text-gray-400 dark:text-gray-500 uppercase mb-2">
             Verificare în așteptare
           </p>
           <div className="space-y-2">
             {pending.map((user) => (
-              <div key={user.id} className="bg-white rounded-xl px-4 py-3 border border-gray-100 flex items-center gap-3 opacity-60">
-                <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+              <div key={user.id} className="bg-white dark:bg-gray-800 rounded-xl px-4 py-3 border border-gray-100 dark:border-gray-700 flex items-center gap-3 opacity-60">
+                <div className="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" stroke="#9ca3af" strokeWidth="2" />
                     <path d="M12 6v6l4 2" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" />
                   </svg>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-400 truncate">{user.email}</p>
-                  <p className="text-[10px] text-gray-300">Email neconfirmat</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{user.email}</p>
+                  <p className="text-[10px] text-gray-300 dark:text-gray-600">Email neconfirmat</p>
                 </div>
               </div>
             ))}

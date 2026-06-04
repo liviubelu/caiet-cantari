@@ -179,11 +179,11 @@ export function SongForm({ songId, initialValues }: Props) {
     <form onSubmit={handleSubmit} className="space-y-4 pb-8">
 
       {/* ── Import din imagine / PDF ── */}
-      <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4">
+      <div className="bg-indigo-50 dark:bg-indigo-950 border border-indigo-100 dark:border-indigo-800 rounded-2xl p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold text-indigo-900">Importă din imagine sau PDF</p>
-            <p className="text-xs text-indigo-500 mt-0.5">
+            <p className="text-sm font-semibold text-indigo-900 dark:text-indigo-300">Importă din imagine sau PDF</p>
+            <p className="text-xs text-indigo-500 dark:text-indigo-400 mt-0.5">
               Titlul, tonalitatea și versurile se completează automat cu AI
             </p>
           </div>
@@ -222,7 +222,7 @@ export function SongForm({ songId, initialValues }: Props) {
 
         {/* Success */}
         {importSuccess && (
-          <div className="mt-3 flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-100 rounded-xl px-3 py-2">
+          <div className="mt-3 flex items-center gap-2 text-xs text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950 border border-green-100 dark:border-green-800 rounded-xl px-3 py-2">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
               <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -232,7 +232,7 @@ export function SongForm({ songId, initialValues }: Props) {
 
         {/* Error */}
         {importError && (
-          <div className="mt-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
+          <div className="mt-3 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950 border border-red-100 dark:border-red-800 rounded-xl px-3 py-2">
             {importError}
           </div>
         )}
@@ -248,11 +248,11 @@ export function SongForm({ songId, initialValues }: Props) {
             {usageWarning === "warn"   && "⚠️ "}
             {usageCount}/{FREE_LIMIT} conversii gratuite azi
           </span>
-          <span className="text-[10px] text-indigo-300">Resetare la miezul nopții</span>
+          <span className="text-[10px] text-indigo-300 dark:text-indigo-600">Resetare la miezul nopții</span>
         </div>
 
         {/* Progress bar */}
-        <div className="mt-1.5 h-1 bg-indigo-100 rounded-full overflow-hidden">
+        <div className="mt-1.5 h-1 bg-indigo-100 dark:bg-indigo-900 rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all ${
               usageWarning === "danger" ? "bg-red-500" :
@@ -266,7 +266,7 @@ export function SongForm({ songId, initialValues }: Props) {
 
       {/* Titlu */}
       <div>
-        <label className="block text-[11px] font-semibold tracking-widest text-gray-500 uppercase mb-1.5">
+        <label className="block text-[11px] font-semibold tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-1.5">
           Titlu
         </label>
         <input
@@ -274,20 +274,20 @@ export function SongForm({ songId, initialValues }: Props) {
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Ex: Doamne, Te iubesc"
           required
-          className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition"
+          className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-300 dark:placeholder-gray-600 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition"
         />
       </div>
 
       {/* Categorie + Tonalitate */}
       <div className="flex gap-3">
         <div className="flex-1">
-          <label className="block text-[11px] font-semibold tracking-widest text-gray-500 uppercase mb-1.5">
+          <label className="block text-[11px] font-semibold tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-1.5">
             Categorie
           </label>
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition"
+            className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition"
           >
             <option value="">— Alege —</option>
             {CATEGORIES.map((c) => (
@@ -296,7 +296,7 @@ export function SongForm({ songId, initialValues }: Props) {
           </select>
         </div>
         <div className="w-28">
-          <label className="block text-[11px] font-semibold tracking-widest text-gray-500 uppercase mb-1.5">
+          <label className="block text-[11px] font-semibold tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-1.5">
             Tonalitate
           </label>
           <select
@@ -309,7 +309,7 @@ export function SongForm({ songId, initialValues }: Props) {
               }
               setDefaultKey(newKey)
             }}
-            className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition"
+            className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition"
           >
             <option value="">—</option>
             {NOTES.map((n) => (
@@ -323,10 +323,10 @@ export function SongForm({ songId, initialValues }: Props) {
       </div>
 
       {/* Toolbar scurtături */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
         {/* Secțiuni */}
-        <div className="flex items-center gap-1.5 px-3 py-2 border-b border-gray-100">
-          <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mr-1 flex-shrink-0">
+        <div className="flex items-center gap-1.5 px-3 py-2 border-b border-gray-100 dark:border-gray-700">
+          <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mr-1 flex-shrink-0">
             Secțiuni
           </span>
           <div className="flex gap-1.5 flex-wrap">
@@ -335,7 +335,7 @@ export function SongForm({ songId, initialValues }: Props) {
                 key={s.tag}
                 type="button"
                 onClick={() => insertSection(s.tag)}
-                className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-semibold hover:bg-indigo-100 active:bg-indigo-200 transition"
+                className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 text-xs font-semibold hover:bg-indigo-100 dark:hover:bg-indigo-900 active:bg-indigo-200 transition"
               >
                 {s.label}
               </button>
@@ -347,7 +347,7 @@ export function SongForm({ songId, initialValues }: Props) {
         <div className="flex items-center gap-1.5 px-3 py-2 min-h-[44px]">
           {diatonicChords.length > 0 ? (
             <>
-              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mr-1 flex-shrink-0">
+              <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mr-1 flex-shrink-0">
                 Acorduri
               </span>
               <div className="flex gap-1.5 flex-wrap">
@@ -356,7 +356,7 @@ export function SongForm({ songId, initialValues }: Props) {
                     key={chord}
                     type="button"
                     onClick={() => insertChord(chord)}
-                    className="px-2.5 py-1 rounded-lg bg-gray-100 text-gray-700 text-xs font-mono font-semibold hover:bg-gray-200 active:bg-gray-300 transition"
+                    className="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs font-mono font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 active:bg-gray-300 transition"
                   >
                     {chord}
                   </button>
@@ -364,7 +364,7 @@ export function SongForm({ songId, initialValues }: Props) {
               </div>
             </>
           ) : (
-            <span className="text-xs text-gray-300 italic">
+            <span className="text-xs text-gray-300 dark:text-gray-600 italic">
               Alege o tonalitate ca să vezi acordurile gamei
             </span>
           )}
@@ -373,7 +373,7 @@ export function SongForm({ songId, initialValues }: Props) {
 
       {/* Editor */}
       <div>
-        <label className="block text-[11px] font-semibold tracking-widest text-gray-500 uppercase mb-1.5">
+        <label className="block text-[11px] font-semibold tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-1.5">
           Conținut (ChordPro)
         </label>
         <textarea
@@ -383,22 +383,22 @@ export function SongForm({ songId, initialValues }: Props) {
           placeholder={PLACEHOLDER}
           required
           rows={12}
-          className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-mono text-gray-900 placeholder-gray-200 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition resize-none leading-relaxed"
+          className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 text-sm font-mono text-gray-900 dark:text-gray-100 placeholder-gray-200 dark:placeholder-gray-600 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition resize-none leading-relaxed"
         />
-        <p className="mt-1.5 text-[11px] text-gray-400">
+        <p className="mt-1.5 text-[11px] text-gray-400 dark:text-gray-500">
           Acorduri:{" "}
-          <code className="bg-gray-100 px-1 rounded">[C]text</code> &nbsp;|&nbsp; Secțiuni:{" "}
-          <code className="bg-gray-100 px-1 rounded">{"{verse}"}</code>
+          <code className="bg-gray-100 dark:bg-gray-700 dark:text-gray-300 px-1 rounded">[C]text</code> &nbsp;|&nbsp; Secțiuni:{" "}
+          <code className="bg-gray-100 dark:bg-gray-700 dark:text-gray-300 px-1 rounded">{"{verse}"}</code>
         </p>
       </div>
 
       {/* Preview */}
       {content.trim() && (
         <div>
-          <p className="text-[11px] font-semibold tracking-widest text-gray-400 uppercase mb-1.5">
+          <p className="text-[11px] font-semibold tracking-widest text-gray-400 dark:text-gray-500 uppercase mb-1.5">
             Preview
           </p>
-          <div className="bg-white border border-gray-200 rounded-xl px-4 py-4">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-4">
             <ChordProDisplay content={content} />
           </div>
         </div>
@@ -409,7 +409,7 @@ export function SongForm({ songId, initialValues }: Props) {
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-gray-900 text-white py-3.5 rounded-xl font-semibold text-sm hover:bg-gray-800 active:bg-gray-700 transition disabled:opacity-50"
+        className="w-full bg-gray-900 dark:bg-indigo-700 text-white py-3.5 rounded-xl font-semibold text-sm hover:bg-gray-800 dark:hover:bg-indigo-600 active:bg-gray-700 transition disabled:opacity-50"
       >
         {loading ? "Se salvează..." : songId ? "Salvează modificările" : "Adaugă melodia"}
       </button>
@@ -418,7 +418,7 @@ export function SongForm({ songId, initialValues }: Props) {
         <button
           type="button"
           onClick={handleDelete}
-          className="w-full border border-red-100 text-red-500 py-3.5 rounded-xl font-semibold text-sm hover:bg-red-50 transition"
+          className="w-full border border-red-100 dark:border-red-900 text-red-500 dark:text-red-400 py-3.5 rounded-xl font-semibold text-sm hover:bg-red-50 dark:hover:bg-red-950 transition"
         >
           Șterge melodia
         </button>

@@ -34,7 +34,9 @@ body {
 }
 
 .dark body {
-  background-color: #111827;
+  /* gray-950 — matches the outer layout div and the scroll container so the
+     notch / status-bar area shows exactly the same colour as the rest of the app */
+  background-color: #030712;
   color: #f9fafb;
 }
 
