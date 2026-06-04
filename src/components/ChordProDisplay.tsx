@@ -58,9 +58,20 @@ function LineItem({
   const isEmpty = line.segments.every((s) => !s.chord && !s.text.trim())
   if (isEmpty) return <div key={idx} className="h-3" />
 
+  // Hanging indent: first row starts at the left edge, continuation rows
+  // are indented by 1em. Works for both lyrics-only and chord+lyrics because
+  // both use block containers with inline(-block) content.
+  //
+  // For lyrics-only: standard CSS text-indent on a block with inline spans.
+  //
+  // For chord lines: segments are rendered as inline-blocks (not flex items)
+  // so the container's text-indent applies to the first LINE BOX, creating
+  // the same hanging-indent effect. indent-0 on each segment resets the
+  // inherited text-indent so chord/text content inside is unaffected.
+
   if (!line.hasChords || !showChords) {
     return (
-      <div key={idx} className="leading-6 text-gray-900">
+      <div key={idx} className="leading-6 text-gray-900 pl-[1em] [text-indent:-1em]">
         {line.segments.map((s, j) => (
           <span key={j}>{s.text}</span>
         ))}
@@ -69,11 +80,11 @@ function LineItem({
   }
 
   return (
-    <div key={idx} className="flex flex-wrap items-end leading-none mb-1">
+    <div key={idx} className="pl-[1em] [text-indent:-1em] leading-none mb-1">
       {line.segments.map((seg, j) => (
-        <span key={j} className="inline-flex flex-col">
+        <span key={j} className="inline-block align-bottom indent-0">
           <span
-            className="font-bold text-blue-600 leading-none mb-0.5 pr-2"
+            className="block font-bold text-blue-600 leading-none mb-0.5 pr-2"
             style={{ fontSize: `${Math.round(fontSize * 0.85)}px` }}
           >
             {seg.chord ?? " "}
