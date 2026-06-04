@@ -12,6 +12,26 @@ interface Props {
   twoColumns?: boolean
 }
 
+/**
+ * Group consecutive segments that belong to the same word into a single array.
+ * A word boundary is detected when a segment's text ends with whitespace.
+ * This prevents an inline-block line-break from splitting a word whose
+ * syllables carry different chords (e.g. "m" + "[G]ă" → keep together).
+ */
+function groupByWord(segments: Segment[]): Segment[][] {
+  const groups: Segment[][] = []
+  let current: Segment[] = []
+  for (const seg of segments) {
+    current.push(seg)
+    if (/\s$/.test(seg.text)) {
+      groups.push(current)
+      current = []
+    }
+  }
+  if (current.length > 0) groups.push(current)
+  return groups
+}
+
 /** Split lines near the midpoint, preferring to break before a section header */
 function splitAtMidpoint(lines: ParsedLine[]): [ParsedLine[], ParsedLine[]] {
   const mid = Math.ceil(lines.length / 2)
@@ -79,19 +99,26 @@ function LineItem({
     )
   }
 
+  // Group segments by word so that syllables of the same word
+  // (e.g. "m" + "[G]ă") live in one outer inline-block and cannot
+  // be separated by a line break.
   return (
     <div key={idx} className="pl-[1em] [text-indent:-1em] leading-none mb-1">
-      {line.segments.map((seg, j) => (
-        <span key={j} className="inline-block align-bottom indent-0">
-          <span
-            className="block font-bold text-blue-600 leading-none mb-0.5 pr-2"
-            style={{ fontSize: `${Math.round(fontSize * 0.85)}px` }}
-          >
-            {seg.chord ?? " "}
-          </span>
-          <span className="text-gray-900 leading-6 whitespace-pre">
-            {seg.text || (seg.chord ? "​" : "")}
-          </span>
+      {groupByWord(line.segments).map((group, gi) => (
+        <span key={gi} className="inline-block align-bottom indent-0">
+          {group.map((seg, j) => (
+            <span key={j} className="inline-block align-bottom">
+              <span
+                className="block font-bold text-blue-600 leading-none mb-0.5 pr-2"
+                style={{ fontSize: `${Math.round(fontSize * 0.85)}px` }}
+              >
+                {seg.chord ?? " "}
+              </span>
+              <span className="text-gray-900 leading-6 whitespace-pre">
+                {seg.text || (seg.chord ? "​" : "")}
+              </span>
+            </span>
+          ))}
         </span>
       ))}
     </div>
