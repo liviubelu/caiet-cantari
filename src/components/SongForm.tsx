@@ -158,8 +158,8 @@ export function SongForm({ songId, initialValues }: Props) {
                 {NOTES.map((n) => (
                   <option key={n} value={n}>{n}</option>
                 ))}
-                {/* All 12 minor keys starting from Cm, same root order as major keys */}
-                {["Cm", "C#m", "Dm", "Ebm", "Em", "Fm", "F#m", "Gm", "Abm", "Am", "Bbm", "Bm"].map((n) => (
+                {/* All 12 minor keys, sharps only, same root order as major keys */}
+                {["Cm", "C#m", "Dm", "D#m", "Em", "Fm", "F#m", "Gm", "G#m", "Am", "A#m", "Bm"].map((n) => (
                   <option key={n} value={n}>{n}</option>
                 ))}
               </select>
