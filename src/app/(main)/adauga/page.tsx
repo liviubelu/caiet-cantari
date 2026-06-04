@@ -10,7 +10,7 @@ export default async function AdaugaPage() {
   if (!session?.user?.id || !canEditSongs(session.user.role)) redirect("/")
 
   return (
-    <div className="max-w-2xl mx-auto px-4">
+    <div className="max-w-5xl mx-auto px-4 lg:px-8">
       <div className="pt-safe-header lg:pt-6 pb-4 flex items-center gap-3">
         <Link href="/" className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
