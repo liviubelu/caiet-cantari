@@ -57,56 +57,131 @@ function formatServiceDate(dateStr: string) {
   return `${RO_WEEKDAYS[date.getDay()]}, ${d} ${RO_MONTHS[m - 1]} ${y}`
 }
 
-// ── Drag-and-drop hook ────────────────────────────────────────────────────────
-// The WHOLE list-item is draggable. dataTransfer.getData() is used as the
-// primary mechanism for identifying the dragged item — it is the most
-// reliable cross-browser approach. Visual feedback via direct DOM style
-// mutation (no React state ⇒ no re-render that could interrupt the drag).
+// ── Sortable song list (pointer-events based, works on desktop + touch) ──────
+// HTML5 DnD has known issues with React. Instead, we use pointer events:
+// • onPointerDown on the drag handle → capture pointer, remember dragged id
+// • onPointerMove → read DOM positions of sibling items, swap when cursor
+//   crosses the midpoint of a neighbour
+// • onPointerUp → release capture, persist new order via API
+// The list shows the reordered state in real-time during drag.
 
-function useDragList<T extends { id: string }>(
-  items: T[],
-  onReorder: (newItems: T[]) => void
-) {
-  function handleDragStart(e: React.DragEvent<HTMLElement>, id: string) {
-    e.dataTransfer.setData("text/plain", id)
-    e.dataTransfer.effectAllowed = "move"
-    // Dim the dragged row slightly
-    requestAnimationFrame(() => { e.currentTarget.style.opacity = "0.4" })
-  }
+function SortableSongList({
+  songs,
+  onRemoveSong,
+  onReorder,
+}: {
+  songs: SongItem[]
+  onRemoveSong: (id: string) => void
+  onReorder: (newItems: SongItem[]) => void
+}) {
+  const [order, setOrder] = useState<SongItem[]>(songs)
+  const listRef    = useRef<HTMLUListElement>(null)
+  const draggingId = useRef<string | null>(null)
 
-  function handleDragOver(e: React.DragEvent<HTMLElement>) {
+  // Keep order in sync when songs change from outside (add/remove)
+  useEffect(() => { setOrder(songs) }, [songs])
+
+  function handlePointerDown(e: React.PointerEvent<HTMLSpanElement>, id: string) {
     e.preventDefault()
-    e.dataTransfer.dropEffect = "move"
-    e.currentTarget.style.boxShadow = "inset 0 2px 0 0 #6366f1"
+    e.currentTarget.setPointerCapture(e.pointerId)
+    draggingId.current = id
   }
 
-  function handleDragLeave(e: React.DragEvent<HTMLElement>) {
-    // Only clear if we're leaving this element entirely (not entering a child)
-    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-      e.currentTarget.style.boxShadow = ""
+  function handlePointerMove(e: React.PointerEvent<HTMLSpanElement>) {
+    if (!draggingId.current || !listRef.current) return
+
+    // Read current DOM order and cursor position
+    const rows = Array.from(listRef.current.querySelectorAll<HTMLLIElement>("li[data-sid]"))
+    const curId    = draggingId.current
+    const curIdxInDom = rows.findIndex((r) => r.dataset.sid === curId)
+    if (curIdxInDom < 0) return
+
+    for (let i = 0; i < rows.length; i++) {
+      if (i === curIdxInDom) continue
+      const rect = rows[i].getBoundingClientRect()
+      const mid  = rect.top + rect.height / 2
+
+      if (i < curIdxInDom && e.clientY < mid) {
+        // Swap with row above
+        setOrder((prev) => {
+          const next = [...prev]
+          const from = next.findIndex((s) => s.id === curId)
+          const [removed] = next.splice(from, 1)
+          next.splice(i, 0, removed)
+          return next
+        })
+        break
+      }
+      if (i > curIdxInDom && e.clientY > mid) {
+        // Swap with row below
+        setOrder((prev) => {
+          const next = [...prev]
+          const from = next.findIndex((s) => s.id === curId)
+          const [removed] = next.splice(from, 1)
+          next.splice(i, 0, removed)
+          return next
+        })
+        break
+      }
     }
   }
 
-  function handleDrop(e: React.DragEvent<HTMLElement>, targetId: string) {
-    e.preventDefault()
-    e.currentTarget.style.boxShadow = ""
-    const sourceId = e.dataTransfer.getData("text/plain")
-    if (!sourceId || sourceId === targetId) return
-    const from = items.findIndex((x) => x.id === sourceId)
-    const to   = items.findIndex((x) => x.id === targetId)
-    if (from < 0 || to < 0) return
-    const next = [...items]
-    const [removed] = next.splice(from, 1)
-    next.splice(to, 0, removed)
-    onReorder(next)
+  function handlePointerUp(e: React.PointerEvent<HTMLSpanElement>) {
+    if (!draggingId.current) return
+    draggingId.current = null
+    // Persist the new order
+    setOrder((current) => {
+      onReorder(current)
+      return current
+    })
   }
 
-  function handleDragEnd(e: React.DragEvent<HTMLElement>) {
-    e.currentTarget.style.opacity = ""
-    e.currentTarget.style.boxShadow = ""
-  }
+  return (
+    <ul ref={listRef} className="divide-y divide-gray-50 dark:divide-gray-700/50">
+      {order.map((song) => {
+        const isDragging = draggingId.current === song.id
+        return (
+          <li
+            key={song.id}
+            data-sid={song.id}
+            className={`flex items-center gap-2 px-4 py-2.5 group transition-opacity ${isDragging ? "opacity-40" : ""}`}
+          >
+            {/* Drag handle — pointer-captured */}
+            <span
+              onPointerDown={(e) => handlePointerDown(e, song.id)}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              className="cursor-grab active:cursor-grabbing touch-none text-gray-300 dark:text-gray-600 hover:text-gray-500 flex-shrink-0 p-0.5 select-none"
+              title="Trage pentru a reordona"
+            >
+              <DragHandle />
+            </span>
 
-  return { handleDragStart, handleDragOver, handleDragLeave, handleDrop, handleDragEnd }
+            {/* Title → song detail page */}
+            <Link
+              href={`/song/${song.songId}`}
+              className="flex-1 min-w-0 text-sm text-gray-800 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400 truncate transition-colors"
+            >
+              {song.title}
+            </Link>
+
+            {song.key && (
+              <span className="text-[11px] font-mono font-semibold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-md flex-shrink-0 pointer-events-none">
+                {song.key}
+              </span>
+            )}
+
+            <button
+              onClick={() => onRemoveSong(song.id)}
+              className="p-1 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 focus:opacity-100 transition flex-shrink-0"
+            >
+              <XIcon />
+            </button>
+          </li>
+        )
+      })}
+    </ul>
+  )
 }
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -298,8 +373,6 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
     ? [...selected.people].sort((a, b) => a.position - b.position)
     : []
 
-  const mDrag = useDragList(mornings, (items) => reorderSongs("morning", items))
-  const eDrag = useDragList(evenings, (items) => reorderSongs("evening", items))
   const pDrag = useDragList(people, (items) => reorderPeople(items))
 
   const personSuggestions = personInput.trim()
@@ -428,10 +501,10 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
               period="morning"
               planId={selected.id}
               serviceDate={selected.date}
-              dragHooks={mDrag}
               notes={selected.notesMorning ?? ""}
               notesField="notesMorning"
               onRemoveSong={removeSong}
+              onReorderSongs={reorderSongs}
               onNoteChange={(field, val) => handleNoteChange(selected.id, field, val)}
             />
 
@@ -443,10 +516,10 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
               period="evening"
               planId={selected.id}
               serviceDate={selected.date}
-              dragHooks={eDrag}
               notes={selected.notesEvening ?? ""}
               notesField="notesEvening"
               onRemoveSong={removeSong}
+              onReorderSongs={reorderSongs}
               onNoteChange={(field, val) => handleNoteChange(selected.id, field, val)}
             />
 
@@ -554,22 +627,22 @@ interface PeriodSectionProps {
   period: "morning" | "evening"
   planId: string
   serviceDate: string
-  dragHooks: ReturnType<typeof useDragList<SongItem>>
   notes: string
   notesField: "notesMorning" | "notesEvening"
   onRemoveSong: (id: string) => void
+  onReorderSongs: (period: "morning" | "evening", newItems: SongItem[]) => void
   onNoteChange: (field: "notesMorning" | "notesEvening", value: string) => void
 }
 
 function PeriodSection({
   title, icon, songs, period, planId, serviceDate,
-  dragHooks, notes, notesField, onRemoveSong, onNoteChange,
+  notes, notesField, onRemoveSong, onReorderSongs, onNoteChange,
 }: PeriodSectionProps) {
   const pickerUrl = `/planificare/melodii?planId=${planId}&period=${period}&returnDate=${serviceDate}`
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
-      {/* Section header */}
+      {/* Header */}
       <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-base">{icon}</span>
@@ -589,55 +662,14 @@ function PeriodSection({
         </Link>
       </div>
 
-      {/* Song list */}
-      {songs.length > 0 && (
-        <ul className="divide-y divide-gray-50 dark:divide-gray-700/50">
-          {songs.map((song) => (
-            <li
-              key={song.id}
-              draggable
-              onDragStart={(e) => dragHooks.handleDragStart(e, song.id)}
-              onDragOver={(e) => dragHooks.handleDragOver(e)}
-              onDragLeave={(e) => dragHooks.handleDragLeave(e)}
-              onDrop={(e) => dragHooks.handleDrop(e, song.id)}
-              onDragEnd={(e) => dragHooks.handleDragEnd(e)}
-              className="flex items-center gap-2 px-4 py-2.5 group cursor-grab active:cursor-grabbing transition-opacity"
-            >
-              {/* Visual drag handle (decorative) */}
-              <span className="text-gray-300 dark:text-gray-600 flex-shrink-0 pointer-events-none">
-                <DragHandle />
-              </span>
-
-              {/* Title — click opens song detail page */}
-              <Link
-                href={`/song/${song.songId}`}
-                draggable={false}
-                className="flex-1 min-w-0 text-sm text-gray-800 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400 truncate transition-colors"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {song.title}
-              </Link>
-
-              {song.key && (
-                <span className="text-[11px] font-mono font-semibold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-md flex-shrink-0 pointer-events-none">
-                  {song.key}
-                </span>
-              )}
-
-              <button
-                draggable={false}
-                onClick={(e) => { e.stopPropagation(); onRemoveSong(song.id) }}
-                className="p-1 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition flex-shrink-0"
-              >
-                <XIcon />
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {/* Empty state */}
-      {songs.length === 0 && (
+      {/* Sortable song list */}
+      {songs.length > 0 ? (
+        <SortableSongList
+          songs={songs}
+          onRemoveSong={onRemoveSong}
+          onReorder={(newItems) => onReorderSongs(period, newItems)}
+        />
+      ) : (
         <div className="px-4 py-4 text-center">
           <p className="text-xs text-gray-300 dark:text-gray-600 italic">Nicio melodie planificată</p>
         </div>
