@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef } from "react"
+import Link from "next/link"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -32,21 +33,17 @@ type SongOption = {
   defaultKey: string | null
 }
 
-// ── Romanian calendar helpers ─────────────────────────────────────────────────
+// ── Calendar helpers ──────────────────────────────────────────────────────────
 
 const RO_MONTHS = [
   "Ianuarie","Februarie","Martie","Aprilie","Mai","Iunie",
   "Iulie","August","Septembrie","Octombrie","Noiembrie","Decembrie",
 ]
+const RO_WEEKDAYS = ["Duminică","Luni","Marți","Miercuri","Joi","Vineri","Sâmbătă"]
 const RO_DAYS = ["Lu","Ma","Mi","Jo","Vi","Sâ","Du"]
 
-function daysInMonth(y: number, m: number) {
-  return new Date(y, m + 1, 0).getDate()
-}
-// 0=Mon, …, 6=Sun (European)
-function firstWeekday(y: number, m: number) {
-  return (new Date(y, m, 1).getDay() + 6) % 7
-}
+function daysInMonth(y: number, m: number) { return new Date(y, m + 1, 0).getDate() }
+function firstWeekday(y: number, m: number) { return (new Date(y, m, 1).getDay() + 6) % 7 }
 function toDateStr(y: number, m: number, d: number) {
   return `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`
 }
@@ -54,75 +51,83 @@ function todayStr() {
   const t = new Date()
   return toDateStr(t.getFullYear(), t.getMonth(), t.getDate())
 }
+function formatServiceDate(dateStr: string) {
+  const [y, m, d] = dateStr.split("-").map(Number)
+  const date = new Date(y, m - 1, d)
+  return `${RO_WEEKDAYS[date.getDay()]}, ${d} ${RO_MONTHS[m - 1]} ${y}`
+}
 
-// ── Draggable list hook ───────────────────────────────────────────────────────
+// ── Drag-and-drop hook ────────────────────────────────────────────────────────
+// Uses HTML5 DnD with a drag-handle approach. Visual feedback via direct
+// DOM style manipulation to avoid React re-renders mid-drag.
 
-function useDragSort<T extends { id: string }>(
+function useDragList<T extends { id: string }>(
   items: T[],
   onReorder: (newItems: T[]) => void
 ) {
   const dragging = useRef<string | null>(null)
-  const [overIdx, setOverIdx] = useState<number | null>(null)
 
-  function onDragStart(id: string) { dragging.current = id }
-  function onDragOver(e: React.DragEvent, idx: number) {
-    e.preventDefault()
-    setOverIdx(idx)
+  function handleDragStart(e: React.DragEvent, id: string) {
+    dragging.current = id
+    e.dataTransfer.setData("text/plain", id)
+    e.dataTransfer.effectAllowed = "move"
   }
-  function onDrop(idx: number) {
-    if (!dragging.current) return
-    const from = items.findIndex((x) => x.id === dragging.current)
-    if (from === idx) { dragging.current = null; setOverIdx(null); return }
+
+  function handleDragOver(e: React.DragEvent<HTMLElement>) {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = "move"
+    e.currentTarget.style.borderTop = "2px solid #6366f1"
+  }
+
+  function handleDragLeave(e: React.DragEvent<HTMLElement>) {
+    e.currentTarget.style.borderTop = ""
+  }
+
+  function handleDrop(e: React.DragEvent<HTMLElement>, targetId: string) {
+    e.preventDefault()
+    e.currentTarget.style.borderTop = ""
+    const sourceId = dragging.current ?? e.dataTransfer.getData("text/plain")
+    if (!sourceId || sourceId === targetId) return
+    const from = items.findIndex((x) => x.id === sourceId)
+    const to   = items.findIndex((x) => x.id === targetId)
+    if (from < 0 || to < 0) return
     const next = [...items]
     const [removed] = next.splice(from, 1)
-    next.splice(idx, 0, removed)
+    next.splice(to, 0, removed)
     onReorder(next)
     dragging.current = null
-    setOverIdx(null)
   }
-  function onDragEnd() { dragging.current = null; setOverIdx(null) }
 
-  return { onDragStart, onDragOver, onDrop, onDragEnd, overIdx }
+  function handleDragEnd() {
+    dragging.current = null
+  }
+
+  return { handleDragStart, handleDragOver, handleDragLeave, handleDrop, handleDragEnd }
 }
 
-// ── Debounce util ─────────────────────────────────────────────────────────────
-
-function useDebounce(fn: (...args: unknown[]) => void, ms: number) {
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  return useCallback((...args: unknown[]) => {
-    if (timer.current) clearTimeout(timer.current)
-    timer.current = setTimeout(() => fn(...args), ms)
-  }, [fn, ms])
-}
-
-// ── Main component ────────────────────────────────────────────────────────────
+// ── Props ─────────────────────────────────────────────────────────────────────
 
 interface Props {
   allSongs: SongOption[]
   userNames: string[]
 }
 
+// ── Main component ────────────────────────────────────────────────────────────
+
 export function PlanificareClient({ allSongs, userNames }: Props) {
   const now = new Date()
-  const [year, setYear] = useState(now.getFullYear())
+  const [year, setYear]   = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth())
   const [services, setServices] = useState<Record<string, ServicePlan>>({})
   const [selected, setSelected] = useState<ServicePlan | null>(null)
   const [busy, setBusy] = useState(false)
 
-  // Song search
-  const [addingPeriod, setAddingPeriod] = useState<"morning" | "evening" | null>(null)
-  const [songQ, setSongQ] = useState("")
-
-  // Person input
-  const [personInput, setPersonInput] = useState("")
+  // Person input state
+  const [personInput, setPersonInput]   = useState("")
   const [showPersonSug, setShowPersonSug] = useState(false)
+  const personRef = useRef<HTMLDivElement>(null)
 
-  // Notes (debounced save)
-  const [notesMorning, setNotesMorning] = useState("")
-  const [notesEvening, setNotesEvening] = useState("")
-
-  // ── Load month ──────────────────────────────────────────────────────────
+  // ── Load month services ─────────────────────────────────────────────────
 
   useEffect(() => {
     const key = `${year}-${String(month + 1).padStart(2, "0")}`
@@ -133,47 +138,57 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
         for (const s of data) map[s.date] = s
         setServices(map)
       })
+      .catch(() => {})
   }, [year, month])
 
-  // Sync notes state when selected changes
+  // ── Auto-select date from URL param (when returning from song picker) ───
+
   useEffect(() => {
-    setNotesMorning(selected?.notesMorning ?? "")
-    setNotesEvening(selected?.notesEvening ?? "")
-  }, [selected?.id])
+    const params = new URLSearchParams(window.location.search)
+    const date = params.get("date")
+    if (date) {
+      // Clear the param from URL without navigating
+      const url = new URL(window.location.href)
+      url.searchParams.delete("date")
+      window.history.replaceState({}, "", url.toString())
+      handleSelectDate(date)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
-  // ── Debounced notes save ────────────────────────────────────────────────
+  // Close person suggestions on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (personRef.current && !personRef.current.contains(e.target as Node)) {
+        setShowPersonSug(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClick)
+    return () => document.removeEventListener("mousedown", handleClick)
+  }, [])
 
-  const saveNotes = useCallback(
-    async (planId: string, field: "notesMorning" | "notesEvening", value: string) => {
-      await fetch(`/api/services/${planId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ [field]: value }),
-      })
-    },
-    []
-  )
-
-  // ── Select / create service for a Sunday ───────────────────────────────
+  // ── Select / create service ─────────────────────────────────────────────
 
   async function handleSelectDate(dateStr: string) {
     if (busy) return
     setBusy(true)
-    const existing = services[dateStr]
-    if (existing) {
-      setSelected(existing)
+    try {
+      const existing = services[dateStr]
+      if (existing) {
+        setSelected(existing)
+        return
+      }
+      const res  = await fetch("/api/services", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: dateStr }),
+      })
+      const plan: ServicePlan = await res.json()
+      setServices((s) => ({ ...s, [dateStr]: plan }))
+      setSelected(plan)
+    } finally {
       setBusy(false)
-      return
     }
-    const res = await fetch("/api/services", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date: dateStr }),
-    })
-    const plan: ServicePlan = await res.json()
-    setServices((s) => ({ ...s, [dateStr]: plan }))
-    setSelected(plan)
-    setBusy(false)
   }
 
   function updateSelected(plan: ServicePlan) {
@@ -181,20 +196,7 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
     setServices((s) => ({ ...s, [plan.date]: plan }))
   }
 
-  // ── Songs ───────────────────────────────────────────────────────────────
-
-  async function addSong(song: SongOption, period: "morning" | "evening") {
-    if (!selected) return
-    const res = await fetch(`/api/services/${selected.id}/songs`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ songId: song.id, period, key: song.defaultKey }),
-    })
-    const item: SongItem = await res.json()
-    updateSelected({ ...selected, songs: [...selected.songs, item] })
-    setSongQ("")
-    setAddingPeriod(null)
-  }
+  // ── Song helpers ────────────────────────────────────────────────────────
 
   async function removeSong(itemId: string) {
     if (!selected) return
@@ -205,8 +207,7 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
   async function reorderSongs(period: "morning" | "evening", newItems: SongItem[]) {
     if (!selected) return
     const others = selected.songs.filter((s) => s.period !== period)
-    const merged = [...others, ...newItems]
-    updateSelected({ ...selected, songs: merged })
+    updateSelected({ ...selected, songs: [...others, ...newItems] })
     await fetch(`/api/services/${selected.id}/songs/reorder`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -214,11 +215,11 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
     })
   }
 
-  // ── People ──────────────────────────────────────────────────────────────
+  // ── People helpers ──────────────────────────────────────────────────────
 
   async function addPerson(name: string) {
     if (!selected || !name.trim()) return
-    const res = await fetch(`/api/services/${selected.id}/people`, {
+    const res  = await fetch(`/api/services/${selected.id}/people`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: name.trim() }),
@@ -245,107 +246,132 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
     })
   }
 
-  // ── Calendar ────────────────────────────────────────────────────────────
+  // ── Notes (debounced) ───────────────────────────────────────────────────
 
-  const days = daysInMonth(year, month)
+  const notesTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  function handleNoteChange(planId: string, field: "notesMorning" | "notesEvening", value: string) {
+    if (!selected) return
+    const updated = { ...selected, [field]: value }
+    updateSelected(updated)
+    if (notesTimer.current) clearTimeout(notesTimer.current)
+    notesTimer.current = setTimeout(() => {
+      fetch(`/api/services/${planId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [field]: value }),
+      })
+    }, 600)
+  }
+
+  // ── Calendar grid ───────────────────────────────────────────────────────
+
+  const today  = todayStr()
+  const days   = daysInMonth(year, month)
   const offset = firstWeekday(year, month)
-  const today = todayStr()
   const cells: (number | null)[] = [
     ...Array(offset).fill(null),
     ...Array.from({ length: days }, (_, i) => i + 1),
   ]
-  // Pad to full rows
   while (cells.length % 7 !== 0) cells.push(null)
 
   function prevMonth() {
-    if (month === 0) { setYear(y => y - 1); setMonth(11) }
-    else setMonth(m => m - 1)
+    if (month === 0) { setYear((y) => y - 1); setMonth(11) }
+    else setMonth((m) => m - 1)
   }
   function nextMonth() {
-    if (month === 11) { setYear(y => y + 1); setMonth(0) }
-    else setMonth(m => m + 1)
+    if (month === 11) { setYear((y) => y + 1); setMonth(0) }
+    else setMonth((m) => m + 1)
   }
 
-  // ── Render ──────────────────────────────────────────────────────────────
+  // Sorted song lists
+  const mornings = selected
+    ? [...selected.songs.filter((s) => s.period === "morning")].sort((a, b) => a.position - b.position)
+    : []
+  const evenings = selected
+    ? [...selected.songs.filter((s) => s.period === "evening")].sort((a, b) => a.position - b.position)
+    : []
+  const people = selected
+    ? [...selected.people].sort((a, b) => a.position - b.position)
+    : []
 
-  const mornings = selected ? selected.songs.filter((s) => s.period === "morning").sort((a, b) => a.position - b.position) : []
-  const evenings = selected ? selected.songs.filter((s) => s.period === "evening").sort((a, b) => a.position - b.position) : []
-
-  const filteredSongs = songQ.trim()
-    ? allSongs.filter((s) =>
-        s.title.toLowerCase().includes(songQ.toLowerCase()) ||
-        (s.firstLine?.toLowerCase().includes(songQ.toLowerCase()) ?? false)
-      ).slice(0, 8)
-    : allSongs.slice(0, 8)
+  const mDrag = useDragList(mornings, (items) => reorderSongs("morning", items))
+  const eDrag = useDragList(evenings, (items) => reorderSongs("evening", items))
+  const pDrag = useDragList(people, (items) => reorderPeople(items))
 
   const personSuggestions = personInput.trim()
     ? userNames.filter((n) => n.toLowerCase().includes(personInput.toLowerCase())).slice(0, 6)
     : userNames.slice(0, 6)
 
+  // ── Render ──────────────────────────────────────────────────────────────
+
   return (
-    <div className="flex-1 flex flex-col lg:flex-row lg:overflow-hidden h-full">
+    <div className="flex-1 flex flex-col lg:flex-row lg:overflow-hidden">
 
       {/* ── Calendar panel ─────────────────────────────────────────────── */}
       <div className={`${selected ? "hidden lg:flex" : "flex"} flex-col lg:w-80 xl:w-96 lg:border-r border-gray-200 dark:border-gray-700 lg:overflow-y-auto`}>
 
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 lg:px-6 pt-safe-header lg:pt-6 pb-4">
+        {/* Month header */}
+        <div className="flex items-center justify-between px-4 lg:px-5 pt-safe-header lg:pt-6 pb-2">
           <div>
-            <p className="text-[10px] font-semibold tracking-widest text-gray-400 dark:text-gray-500 uppercase">Planificare</p>
-            <h1 className="text-[22px] font-display font-bold text-gray-900 dark:text-gray-100">Slujbe</h1>
+            <p className="text-[10px] font-semibold tracking-widest text-gray-400 dark:text-gray-500 uppercase">Planificare slujbe</p>
+            <h1 className="text-xl font-display font-bold text-gray-900 dark:text-gray-100">Calendar</h1>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             <button onClick={prevMonth} className="p-2 rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </button>
-            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 min-w-[110px] text-center">
+            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 min-w-[120px] text-center">
               {RO_MONTHS[month]} {year}
             </span>
             <button onClick={nextMonth} className="p-2 rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </button>
           </div>
         </div>
 
-        {/* Day headers */}
-        <div className="grid grid-cols-7 px-2 lg:px-4 mb-1">
+        {/* Day-of-week headers */}
+        <div className="grid grid-cols-7 px-3 lg:px-4 mt-2 mb-1">
           {RO_DAYS.map((d, i) => (
-            <div key={d} className={`text-center text-[11px] font-semibold py-1 ${i === 6 ? "text-indigo-600 dark:text-indigo-400" : "text-gray-400 dark:text-gray-500"}`}>
+            <div key={d} className={`text-center text-[11px] font-bold py-1 ${i === 6 ? "text-indigo-500 dark:text-indigo-400" : "text-gray-400 dark:text-gray-500"}`}>
               {d}
             </div>
           ))}
         </div>
 
-        {/* Calendar grid */}
-        <div className="grid grid-cols-7 px-2 lg:px-4 pb-4 gap-y-0.5">
+        {/* Calendar cells */}
+        <div className="grid grid-cols-7 px-3 lg:px-4 pb-4 gap-y-1">
           {cells.map((day, i) => {
             if (!day) return <div key={i} />
-            const col = i % 7
-            const isSun = col === 6
-            const dateStr = toDateStr(year, month, day)
-            const isToday = dateStr === today
-            const isSelected = selected?.date === dateStr
-            const hasService = !!services[dateStr]
-            const hasSongs = (services[dateStr]?.songs.length ?? 0) > 0
-            const hasPeople = (services[dateStr]?.people.length ?? 0) > 0
+            const isSun    = i % 7 === 6
+            const dateStr  = toDateStr(year, month, day)
+            const isToday  = dateStr === today
+            const isSel    = selected?.date === dateStr
+            const hasDot   = (services[dateStr]?.songs.length ?? 0) + (services[dateStr]?.people.length ?? 0) > 0
 
             return (
               <button
                 key={i}
                 onClick={() => isSun ? handleSelectDate(dateStr) : undefined}
-                disabled={!isSun}
-                className={`
-                  relative flex flex-col items-center justify-center h-10 rounded-xl text-sm font-medium transition-all
-                  ${!isSun ? "cursor-default text-gray-400 dark:text-gray-600" : ""}
-                  ${isSun && !isSelected ? "text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 hover:bg-indigo-100 dark:hover:bg-indigo-900 font-bold cursor-pointer" : ""}
-                  ${isSelected ? "bg-indigo-700 dark:bg-indigo-600 text-white font-bold shadow-sm" : ""}
-                  ${isToday && !isSelected ? "ring-2 ring-indigo-400 dark:ring-indigo-500" : ""}
-                `}
+                disabled={!isSun || busy}
+                className={[
+                  "relative flex flex-col items-center justify-center h-10 rounded-xl text-sm transition-all",
+                  !isSun ? "cursor-default text-gray-400 dark:text-gray-600" : "",
+                  isSun && !isSel ? "font-bold text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 cursor-pointer" : "",
+                  isSel ? "font-bold bg-indigo-600 dark:bg-indigo-700 text-white shadow-sm" : "",
+                  isToday && !isSel ? "ring-2 ring-inset ring-indigo-400 dark:ring-indigo-600" : "",
+                ].filter(Boolean).join(" ")}
               >
-                {day}
-                {/* Dot: service exists */}
-                {isSun && hasService && (hasSongs || hasPeople) && (
-                  <span className={`absolute bottom-1 w-1.5 h-1.5 rounded-full ${isSelected ? "bg-white" : "bg-indigo-400 dark:bg-indigo-500"}`} />
+                {busy && isSun && dateStr === selected?.date ? (
+                  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="31 11" />
+                  </svg>
+                ) : day}
+                {isSun && hasDot && (
+                  <span className={`absolute bottom-1 w-1 h-1 rounded-full ${isSel ? "bg-white/70" : "bg-indigo-400 dark:bg-indigo-500"}`} />
                 )}
               </button>
             )
@@ -353,59 +379,161 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
         </div>
 
         {/* Legend */}
-        <div className="px-4 lg:px-6 pb-4 flex items-center gap-3 text-[11px] text-gray-400 dark:text-gray-500">
-          <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-sm bg-indigo-50 dark:bg-indigo-950 border border-indigo-200 dark:border-indigo-800" />
-            Duminică (selectabilă)
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500" />
-            Are conținut
-          </span>
+        <div className="px-4 pb-4 text-[11px] text-gray-400 dark:text-gray-500 space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="w-3.5 h-3.5 rounded-md bg-indigo-50 dark:bg-indigo-950 border border-indigo-200 dark:border-indigo-800 flex-shrink-0" />
+            Duminică — selectează pentru a planifica
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 ml-1 flex-shrink-0" />
+            Are melodii sau echipă planificate
+          </div>
         </div>
       </div>
 
       {/* ── Service panel ──────────────────────────────────────────────── */}
       {selected ? (
-        <ServicePanel
-          service={selected}
-          mornings={mornings}
-          evenings={evenings}
-          allSongs={allSongs}
-          userNames={userNames}
-          personInput={personInput}
-          setPersonInput={setPersonInput}
-          showPersonSug={showPersonSug}
-          setShowPersonSug={setShowPersonSug}
-          personSuggestions={personSuggestions}
-          addingPeriod={addingPeriod}
-          setAddingPeriod={setAddingPeriod}
-          songQ={songQ}
-          setSongQ={setSongQ}
-          filteredSongs={filteredSongs}
-          notesMorning={notesMorning}
-          setNotesMorning={setNotesMorning}
-          notesEvening={notesEvening}
-          setNotesEvening={setNotesEvening}
-          onBack={() => setSelected(null)}
-          onAddSong={addSong}
-          onRemoveSong={removeSong}
-          onReorderSongs={reorderSongs}
-          onAddPerson={addPerson}
-          onRemovePerson={removePerson}
-          onReorderPeople={reorderPeople}
-          onSaveNotes={saveNotes}
-        />
+        <div className="flex-1 flex flex-col lg:overflow-y-auto">
+
+          {/* Panel header */}
+          <div className="sticky top-0 z-20 bg-[#f0f2f5]/95 dark:bg-gray-950/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 px-4 lg:px-8 pt-safe-bar pb-3 lg:pt-4 flex items-center gap-3">
+            <button
+              onClick={() => setSelected(null)}
+              className="lg:hidden p-1 -ml-1 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            <div>
+              <p className="text-[10px] font-semibold tracking-widest text-gray-400 dark:text-gray-500 uppercase">Slujbă</p>
+              <h2 className="text-base font-display font-bold text-gray-900 dark:text-gray-100 leading-tight">
+                {formatServiceDate(selected.date)}
+              </h2>
+            </div>
+          </div>
+
+          {/* Sections */}
+          <div className="px-4 lg:px-8 py-5 space-y-4 pb-32 lg:pb-8">
+
+            {/* ── Dimineață ──────────────────────────────────────────── */}
+            <PeriodSection
+              title="Dimineață"
+              icon="🌅"
+              songs={mornings}
+              period="morning"
+              planId={selected.id}
+              serviceDate={selected.date}
+              dragHooks={mDrag}
+              notes={selected.notesMorning ?? ""}
+              notesField="notesMorning"
+              onRemoveSong={removeSong}
+              onNoteChange={(field, val) => handleNoteChange(selected.id, field, val)}
+            />
+
+            {/* ── Seară ──────────────────────────────────────────────── */}
+            <PeriodSection
+              title="Seară"
+              icon="🌙"
+              songs={evenings}
+              period="evening"
+              planId={selected.id}
+              serviceDate={selected.date}
+              dragHooks={eDrag}
+              notes={selected.notesEvening ?? ""}
+              notesField="notesEvening"
+              onRemoveSong={removeSong}
+              onNoteChange={(field, val) => handleNoteChange(selected.id, field, val)}
+            />
+
+            {/* ── Echipă ─────────────────────────────────────────────── */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
+              <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+                <span className="text-base">👥</span>
+                <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Echipă</h3>
+                {people.length > 0 && (
+                  <span className="text-xs text-gray-400 dark:text-gray-500">{people.length} persoane</span>
+                )}
+              </div>
+
+              {/* People list */}
+              {people.length > 0 && (
+                <ul className="divide-y divide-gray-50 dark:divide-gray-700/50">
+                  {people.map((person, idx) => (
+                    <li
+                      key={person.id}
+                      draggable
+                      onDragStart={(e) => pDrag.handleDragStart(e, person.id)}
+                      onDragOver={(e) => pDrag.handleDragOver(e)}
+                      onDragLeave={(e) => pDrag.handleDragLeave(e)}
+                      onDrop={(e) => pDrag.handleDrop(e, person.id)}
+                      onDragEnd={pDrag.handleDragEnd}
+                      className="flex items-center gap-3 px-4 py-2.5"
+                    >
+                      <span className="cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 hover:text-gray-400 flex-shrink-0">
+                        <DragHandle />
+                      </span>
+                      <span className="flex-1 text-sm text-gray-800 dark:text-gray-200">{person.name}</span>
+                      <button onClick={() => removePerson(person.id)} className="p-1 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition">
+                        <XIcon />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {/* Add person — dropdown opens UPWARD to avoid clipping */}
+              <div ref={personRef} className="px-4 py-3 border-t border-gray-50 dark:border-gray-700/50 relative">
+                {/* Suggestions open upward */}
+                {showPersonSug && personSuggestions.length > 0 && (
+                  <div className="absolute bottom-full left-4 right-4 mb-1 z-30 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg overflow-hidden">
+                    {personSuggestions.map((name) => (
+                      <button
+                        key={name}
+                        onMouseDown={(e) => { e.preventDefault(); addPerson(name) }}
+                        className="w-full text-left px-3 py-2.5 text-sm text-gray-800 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-950 transition"
+                      >
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <input
+                    value={personInput}
+                    onChange={(e) => { setPersonInput(e.target.value); setShowPersonSug(true) }}
+                    onFocus={() => setShowPersonSug(true)}
+                    onKeyDown={(e) => { if (e.key === "Enter") { addPerson(personInput) } else if (e.key === "Escape") setShowPersonSug(false) }}
+                    placeholder="Adaugă persoană…"
+                    className="flex-1 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition"
+                  />
+                  <button
+                    onClick={() => addPerson(personInput)}
+                    disabled={!personInput.trim()}
+                    className="px-3 py-2 bg-indigo-700 text-white text-xs font-semibold rounded-xl hover:bg-indigo-600 transition disabled:opacity-40"
+                  >
+                    Adaugă
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
       ) : (
         <div className="hidden lg:flex flex-1 items-center justify-center">
-          <div className="text-center">
-            <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center mx-auto mb-3">
+          <div className="text-center max-w-xs">
+            <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center mx-auto mb-4">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-indigo-400 dark:text-indigo-500">
                 <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.8"/>
                 <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                <circle cx="8" cy="15" r="1.2" fill="currentColor"/>
+                <circle cx="12" cy="15" r="1.2" fill="currentColor"/>
+                <circle cx="16" cy="15" r="1.2" fill="currentColor"/>
               </svg>
             </div>
-            <p className="text-sm text-gray-400 dark:text-gray-500">Selectează o duminică din calendar</p>
+            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Selectează o duminică</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Duminicile sunt evidențiate în calendar</p>
           </div>
         </div>
       )}
@@ -413,316 +541,96 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
   )
 }
 
-// ── Service Panel ─────────────────────────────────────────────────────────────
+// ── Period Section (Dimineață / Seară) ────────────────────────────────────────
 
-interface PanelProps {
-  service: ServicePlan
-  mornings: SongItem[]
-  evenings: SongItem[]
-  allSongs: SongOption[]
-  userNames: string[]
-  personInput: string
-  setPersonInput: (v: string) => void
-  showPersonSug: boolean
-  setShowPersonSug: (v: boolean) => void
-  personSuggestions: string[]
-  addingPeriod: "morning" | "evening" | null
-  setAddingPeriod: (v: "morning" | "evening" | null) => void
-  songQ: string
-  setSongQ: (v: string) => void
-  filteredSongs: SongOption[]
-  notesMorning: string
-  setNotesMorning: (v: string) => void
-  notesEvening: string
-  setNotesEvening: (v: string) => void
-  onBack: () => void
-  onAddSong: (song: SongOption, period: "morning" | "evening") => void
-  onRemoveSong: (id: string) => void
-  onReorderSongs: (period: "morning" | "evening", items: SongItem[]) => void
-  onAddPerson: (name: string) => void
-  onRemovePerson: (id: string) => void
-  onReorderPeople: (items: PersonItem[]) => void
-  onSaveNotes: (planId: string, field: "notesMorning" | "notesEvening", value: string) => void
-}
-
-function ServicePanel({
-  service, mornings, evenings,
-  userNames, personInput, setPersonInput, showPersonSug, setShowPersonSug, personSuggestions,
-  addingPeriod, setAddingPeriod, songQ, setSongQ, filteredSongs,
-  notesMorning, setNotesMorning, notesEvening, setNotesEvening,
-  onBack, onAddSong, onRemoveSong, onReorderSongs,
-  onAddPerson, onRemovePerson, onReorderPeople, onSaveNotes,
-}: PanelProps) {
-  const [date] = service.date.split("T")
-  const [y, m, d] = date.split("-").map(Number)
-  const dateObj = new Date(y, m - 1, d)
-  const RO_WEEKDAYS = ["Duminică","Luni","Marți","Miercuri","Joi","Vineri","Sâmbătă"]
-  const dateLabel = `${RO_WEEKDAYS[dateObj.getDay()]}, ${d} ${RO_MONTHS[m - 1]} ${y}`
-
-  const notesTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  function handleNoteChange(field: "notesMorning" | "notesEvening", value: string) {
-    if (field === "notesMorning") setNotesMorning(value)
-    else setNotesEvening(value)
-    if (notesTimer.current) clearTimeout(notesTimer.current)
-    notesTimer.current = setTimeout(() => onSaveNotes(service.id, field, value), 600)
-  }
-
-  const mDrag = useDragSort(mornings, (items) => onReorderSongs("morning", items))
-  const eDrag = useDragSort(evenings, (items) => onReorderSongs("evening", items))
-  const pDrag = useDragSort(service.people, (items) => onReorderPeople(items))
-
-  return (
-    <div className="flex-1 flex flex-col lg:overflow-y-auto">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-[#f0f2f5]/95 dark:bg-gray-950/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 px-4 lg:px-8 pt-safe-bar pb-3 lg:pt-4 flex items-center gap-3">
-        <button
-          onClick={onBack}
-          className="lg:hidden flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </button>
-        <div>
-          <p className="text-[10px] font-semibold tracking-widest text-gray-400 dark:text-gray-500 uppercase">Slujbă</p>
-          <h2 className="text-base font-display font-bold text-gray-900 dark:text-gray-100 leading-tight">{dateLabel}</h2>
-        </div>
-      </div>
-
-      <div className="px-4 lg:px-8 py-5 space-y-6 pb-32 lg:pb-8">
-
-        {/* ── Dimineață ─────────────────────────────────────────────── */}
-        <ServiceSection
-          title="Dimineață"
-          icon="🌅"
-          songs={mornings}
-          period="morning"
-          dragHooks={mDrag}
-          notes={notesMorning}
-          notesField="notesMorning"
-          addingPeriod={addingPeriod}
-          setAddingPeriod={setAddingPeriod}
-          songQ={songQ}
-          setSongQ={setSongQ}
-          filteredSongs={filteredSongs}
-          onAddSong={onAddSong}
-          onRemoveSong={onRemoveSong}
-          onNoteChange={handleNoteChange}
-        />
-
-        {/* ── Seară ─────────────────────────────────────────────────── */}
-        <ServiceSection
-          title="Seară"
-          icon="🌙"
-          songs={evenings}
-          period="evening"
-          dragHooks={eDrag}
-          notes={notesEvening}
-          notesField="notesEvening"
-          addingPeriod={addingPeriod}
-          setAddingPeriod={setAddingPeriod}
-          songQ={songQ}
-          setSongQ={setSongQ}
-          filteredSongs={filteredSongs}
-          onAddSong={onAddSong}
-          onRemoveSong={onRemoveSong}
-          onNoteChange={handleNoteChange}
-        />
-
-        {/* ── Echipă ────────────────────────────────────────────────── */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
-            <span className="text-base">👥</span>
-            <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Echipă</h3>
-          </div>
-
-          {/* People list */}
-          <ul className="divide-y divide-gray-50 dark:divide-gray-700/50">
-            {service.people.sort((a, b) => a.position - b.position).map((person, idx) => (
-              <li
-                key={person.id}
-                draggable
-                onDragStart={() => pDrag.onDragStart(person.id)}
-                onDragOver={(e) => pDrag.onDragOver(e, idx)}
-                onDrop={() => pDrag.onDrop(idx)}
-                onDragEnd={pDrag.onDragEnd}
-                className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${pDrag.overIdx === idx ? "bg-indigo-50 dark:bg-indigo-950" : ""}`}
-              >
-                <span className="cursor-grab text-gray-300 dark:text-gray-600 hover:text-gray-500">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                    <circle cx="9" cy="7" r="1.5" fill="currentColor"/><circle cx="15" cy="7" r="1.5" fill="currentColor"/>
-                    <circle cx="9" cy="12" r="1.5" fill="currentColor"/><circle cx="15" cy="12" r="1.5" fill="currentColor"/>
-                    <circle cx="9" cy="17" r="1.5" fill="currentColor"/><circle cx="15" cy="17" r="1.5" fill="currentColor"/>
-                  </svg>
-                </span>
-                <span className="flex-1 text-sm text-gray-800 dark:text-gray-200">{person.name}</span>
-                <button
-                  onClick={() => onRemovePerson(person.id)}
-                  className="p-1 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                </button>
-              </li>
-            ))}
-          </ul>
-
-          {/* Add person */}
-          <div className="px-4 py-3 border-t border-gray-50 dark:border-gray-700/50 relative">
-            <div className="flex gap-2">
-              <input
-                value={personInput}
-                onChange={(e) => { setPersonInput(e.target.value); setShowPersonSug(true) }}
-                onFocus={() => setShowPersonSug(true)}
-                onKeyDown={(e) => { if (e.key === "Enter") { onAddPerson(personInput); setShowPersonSug(false) } }}
-                placeholder="Adaugă persoană…"
-                className="flex-1 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition"
-              />
-              <button
-                onClick={() => { onAddPerson(personInput); setShowPersonSug(false) }}
-                disabled={!personInput.trim()}
-                className="px-3 py-2 bg-indigo-700 text-white text-xs font-semibold rounded-xl hover:bg-indigo-600 transition disabled:opacity-40"
-              >
-                Adaugă
-              </button>
-            </div>
-            {showPersonSug && personInput.length > 0 && personSuggestions.length > 0 && (
-              <div className="absolute z-20 left-4 right-4 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg overflow-hidden">
-                {personSuggestions.map((name) => (
-                  <button
-                    key={name}
-                    onClick={() => { onAddPerson(name); setShowPersonSug(false) }}
-                    className="w-full text-left px-3 py-2 text-sm text-gray-800 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-950 transition"
-                  >
-                    {name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-      </div>
-    </div>
-  )
-}
-
-// ── Service Section (Dimineață / Seară) ───────────────────────────────────────
-
-interface SectionProps {
+interface PeriodSectionProps {
   title: string
   icon: string
   songs: SongItem[]
   period: "morning" | "evening"
-  dragHooks: ReturnType<typeof useDragSort<SongItem>>
+  planId: string
+  serviceDate: string
+  dragHooks: ReturnType<typeof useDragList<SongItem>>
   notes: string
   notesField: "notesMorning" | "notesEvening"
-  addingPeriod: "morning" | "evening" | null
-  setAddingPeriod: (v: "morning" | "evening" | null) => void
-  songQ: string
-  setSongQ: (v: string) => void
-  filteredSongs: SongOption[]
-  onAddSong: (song: SongOption, period: "morning" | "evening") => void
   onRemoveSong: (id: string) => void
   onNoteChange: (field: "notesMorning" | "notesEvening", value: string) => void
 }
 
-function ServiceSection({
-  title, icon, songs, period, dragHooks,
-  notes, notesField, addingPeriod, setAddingPeriod,
-  songQ, setSongQ, filteredSongs, onAddSong, onRemoveSong, onNoteChange,
-}: SectionProps) {
-  const isAdding = addingPeriod === period
+function PeriodSection({
+  title, icon, songs, period, planId, serviceDate,
+  dragHooks, notes, notesField, onRemoveSong, onNoteChange,
+}: PeriodSectionProps) {
+  const pickerUrl = `/planificare/melodii?planId=${planId}&period=${period}&returnDate=${serviceDate}`
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+      {/* Section header */}
       <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-base">{icon}</span>
           <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">{title}</h3>
           {songs.length > 0 && (
-            <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500">
-              {songs.length} melodii
-            </span>
+            <span className="text-xs text-gray-400 dark:text-gray-500">{songs.length} melodii</span>
           )}
         </div>
-        <button
-          onClick={() => { setAddingPeriod(isAdding ? null : period); setSongQ("") }}
-          className="flex items-center gap-1 text-xs font-semibold text-indigo-700 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 transition"
+        <Link
+          href={pickerUrl}
+          className="flex items-center gap-1 text-xs font-semibold text-indigo-700 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-200 transition"
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
             <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
           </svg>
-          Adaugă
-        </button>
+          Adaugă melodie
+        </Link>
       </div>
 
       {/* Song list */}
       {songs.length > 0 && (
         <ul className="divide-y divide-gray-50 dark:divide-gray-700/50">
-          {songs.map((song, idx) => (
+          {songs.map((song) => (
             <li
               key={song.id}
-              draggable
-              onDragStart={() => dragHooks.onDragStart(song.id)}
-              onDragOver={(e) => dragHooks.onDragOver(e, idx)}
-              onDrop={() => dragHooks.onDrop(idx)}
-              onDragEnd={dragHooks.onDragEnd}
-              className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${dragHooks.overIdx === idx ? "bg-indigo-50 dark:bg-indigo-950 border-l-2 border-indigo-400" : ""}`}
+              onDragOver={(e) => dragHooks.handleDragOver(e)}
+              onDragLeave={(e) => dragHooks.handleDragLeave(e)}
+              onDrop={(e) => dragHooks.handleDrop(e, song.id)}
+              className="flex items-center gap-2 px-4 py-2.5 group"
             >
-              <span className="cursor-grab text-gray-300 dark:text-gray-600 hover:text-gray-500 flex-shrink-0">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                  <circle cx="9" cy="7" r="1.5" fill="currentColor"/><circle cx="15" cy="7" r="1.5" fill="currentColor"/>
-                  <circle cx="9" cy="12" r="1.5" fill="currentColor"/><circle cx="15" cy="12" r="1.5" fill="currentColor"/>
-                  <circle cx="9" cy="17" r="1.5" fill="currentColor"/><circle cx="15" cy="17" r="1.5" fill="currentColor"/>
-                </svg>
+              {/* Drag handle — only this part is draggable */}
+              <span
+                draggable
+                onDragStart={(e) => dragHooks.handleDragStart(e, song.id)}
+                onDragEnd={dragHooks.handleDragEnd}
+                className="cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 hover:text-gray-400 flex-shrink-0 p-0.5 -ml-0.5"
+              >
+                <DragHandle />
               </span>
-              <span className="flex-1 min-w-0">
-                <span className="text-sm text-gray-800 dark:text-gray-200 truncate block">{song.title}</span>
+
+              <span className="flex-1 min-w-0 text-sm text-gray-800 dark:text-gray-200 truncate">
+                {song.title}
               </span>
+
               {song.key && (
                 <span className="text-[11px] font-mono font-semibold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-md flex-shrink-0">
                   {song.key}
                 </span>
               )}
+
               <button
                 onClick={() => onRemoveSong(song.id)}
-                className="p-1 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition flex-shrink-0"
+                className="p-1 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition flex-shrink-0"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                <XIcon />
               </button>
             </li>
           ))}
         </ul>
       )}
 
-      {/* Song search */}
-      {isAdding && (
-        <div className="px-4 py-3 border-t border-gray-50 dark:border-gray-700/50">
-          <input
-            autoFocus
-            value={songQ}
-            onChange={(e) => setSongQ(e.target.value)}
-            placeholder="Caută melodie…"
-            className="w-full bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition mb-2"
-          />
-          <div className="space-y-0.5 max-h-48 overflow-y-auto">
-            {filteredSongs.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => onAddSong(s, period)}
-                className="w-full text-left px-3 py-2 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-950 transition group"
-              >
-                <span className="text-sm font-medium text-gray-800 dark:text-gray-200 group-hover:text-indigo-700 dark:group-hover:text-indigo-400">{s.title}</span>
-                {s.defaultKey && (
-                  <span className="ml-2 text-[11px] font-mono text-gray-400 dark:text-gray-500">{s.defaultKey}</span>
-                )}
-              </button>
-            ))}
-            {filteredSongs.length === 0 && (
-              <p className="text-xs text-gray-400 dark:text-gray-500 px-3 py-2">Nicio melodie găsită.</p>
-            )}
-          </div>
+      {/* Empty state */}
+      {songs.length === 0 && (
+        <div className="px-4 py-4 text-center">
+          <p className="text-xs text-gray-300 dark:text-gray-600 italic">Nicio melodie planificată</p>
         </div>
       )}
 
@@ -737,5 +645,28 @@ function ServiceSection({
         />
       </div>
     </div>
+  )
+}
+
+// ── Small reusable icons ──────────────────────────────────────────────────────
+
+function DragHandle() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+      <circle cx="9"  cy="6"  r="1.5" fill="currentColor"/>
+      <circle cx="15" cy="6"  r="1.5" fill="currentColor"/>
+      <circle cx="9"  cy="12" r="1.5" fill="currentColor"/>
+      <circle cx="15" cy="12" r="1.5" fill="currentColor"/>
+      <circle cx="9"  cy="18" r="1.5" fill="currentColor"/>
+      <circle cx="15" cy="18" r="1.5" fill="currentColor"/>
+    </svg>
+  )
+}
+
+function XIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+      <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
   )
 }
