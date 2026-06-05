@@ -103,9 +103,9 @@ interface Props {
 }
 
 export function PlanificareClient({ allSongs, userNames }: Props) {
-  const today = new Date()
-  const [year, setYear] = useState(today.getFullYear())
-  const [month, setMonth] = useState(today.getMonth())
+  const now = new Date()
+  const [year, setYear] = useState(now.getFullYear())
+  const [month, setMonth] = useState(now.getMonth())
   const [services, setServices] = useState<Record<string, ServicePlan>>({})
   const [selected, setSelected] = useState<ServicePlan | null>(null)
   const [busy, setBusy] = useState(false)
