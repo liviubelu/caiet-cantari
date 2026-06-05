@@ -47,6 +47,18 @@ const navItems = [
     ),
   },
   {
+    href: "/planificare",
+    label: "Planificare",
+    icon: (active: boolean) => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth={active ? 2.2 : 1.6} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.12 : 0} />
+        <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth={active ? 2.2 : 1.6} strokeLinecap="round" />
+        <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    ),
+    instrumentistOnly: true,
+  },
+  {
     href: "/cont",
     label: "Cont",
     icon: (active: boolean) => (
@@ -82,23 +94,25 @@ export function Sidebar({ user }: { user: SidebarUser | null }) {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {navItems.map((item) => {
-          const active = pathname === item.href
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                active
-                  ? "bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400"
-                  : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100"
-              }`}
-            >
-              {item.icon(active)}
-              {item.label}
-            </Link>
-          )
-        })}
+        {navItems
+          .filter((item) => !("instrumentistOnly" in item) || canEdit(user?.role))
+          .map((item) => {
+            const active = pathname === item.href
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                  active
+                    ? "bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400"
+                    : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100"
+                }`}
+              >
+                {item.icon(active)}
+                {item.label}
+              </Link>
+            )
+          })}
 
         <div className="h-px bg-gray-100 dark:bg-gray-700 my-2" />
 

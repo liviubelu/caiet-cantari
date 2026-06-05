@@ -24,7 +24,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
       </ScrollContainer>
 
       {/* Mobile bottom nav — hidden on desktop */}
-      <BottomNav />
+      <BottomNav role={user?.role ?? null} />
 
       {/* Offline support — invisible sync + full-screen overlay when offline */}
       <OfflineSync />

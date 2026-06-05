@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, unique, boolean } from "drizzle-orm/pg-core"
+import { pgTable, text, timestamp, uuid, unique, boolean, integer } from "drizzle-orm/pg-core"
 
 export type UserRole = "admin" | "instrumentist" | "user"
 
@@ -49,3 +49,33 @@ export const favorites = pgTable("favorites", {
     .references(() => songs.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow(),
 }, (t) => [unique().on(t.userId, t.songId)])
+
+// ── Service planning ──────────────────────────────────────────────────────────
+
+/** One record per Sunday (or any special date). */
+export const servicePlans = pgTable("service_plans", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  date: text("date").notNull().unique(), // "YYYY-MM-DD"
+  notesMorning: text("notes_morning").default(""),
+  notesEvening: text("notes_evening").default(""),
+  createdAt: timestamp("created_at").defaultNow(),
+  createdBy: uuid("created_by").references(() => users.id),
+})
+
+/** Song linked to a service plan (morning or evening slot). */
+export const servicePlanSongs = pgTable("service_plan_songs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  planId: uuid("plan_id").notNull().references(() => servicePlans.id, { onDelete: "cascade" }),
+  songId: uuid("song_id").notNull().references(() => songs.id, { onDelete: "cascade" }),
+  period: text("period").notNull(), // "morning" | "evening"
+  position: integer("position").notNull().default(0),
+  key: text("key"), // auto-filled from song.defaultKey
+})
+
+/** Person serving at a service (free text name or from user list). */
+export const servicePlanPeople = pgTable("service_plan_people", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  planId: uuid("plan_id").notNull().references(() => servicePlans.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  position: integer("position").notNull().default(0),
+})

@@ -3,19 +3,13 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
-const tabs = [
+const baseTabs = [
   {
     href: "/",
     label: "Acasă",
     icon: (active: boolean) => (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <path
-          d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"
-          stroke="currentColor"
-          strokeWidth={active ? 2.2 : 1.6}
-          fill={active ? "currentColor" : "none"}
-          fillOpacity={active ? 0.15 : 0}
-        />
+        <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z" stroke="currentColor" strokeWidth={active ? 2.2 : 1.6} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.15 : 0} />
         <path d="M9 21V12h6v9" stroke="currentColor" strokeWidth={active ? 2.2 : 1.6} />
       </svg>
     ),
@@ -25,13 +19,7 @@ const tabs = [
     label: "Favorite",
     icon: (active: boolean) => (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <path
-          d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z"
-          stroke="currentColor"
-          strokeWidth={active ? 2.2 : 1.6}
-          fill={active ? "currentColor" : "none"}
-          fillOpacity={active ? 0.85 : 0}
-        />
+        <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z" stroke="currentColor" strokeWidth={active ? 2.2 : 1.6} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.85 : 0} />
       </svg>
     ),
   },
@@ -40,34 +28,10 @@ const tabs = [
     label: "Colecții",
     icon: (active: boolean) => (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <rect
-          x="3" y="3" width="7" height="7" rx="1"
-          stroke="currentColor"
-          strokeWidth={active ? 2.2 : 1.6}
-          fill={active ? "currentColor" : "none"}
-          fillOpacity={active ? 0.15 : 0}
-        />
-        <rect
-          x="14" y="3" width="7" height="7" rx="1"
-          stroke="currentColor"
-          strokeWidth={active ? 2.2 : 1.6}
-          fill={active ? "currentColor" : "none"}
-          fillOpacity={active ? 0.15 : 0}
-        />
-        <rect
-          x="3" y="14" width="7" height="7" rx="1"
-          stroke="currentColor"
-          strokeWidth={active ? 2.2 : 1.6}
-          fill={active ? "currentColor" : "none"}
-          fillOpacity={active ? 0.15 : 0}
-        />
-        <rect
-          x="14" y="14" width="7" height="7" rx="1"
-          stroke="currentColor"
-          strokeWidth={active ? 2.2 : 1.6}
-          fill={active ? "currentColor" : "none"}
-          fillOpacity={active ? 0.15 : 0}
-        />
+        <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth={active ? 2.2 : 1.6} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.15 : 0} />
+        <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth={active ? 2.2 : 1.6} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.15 : 0} />
+        <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth={active ? 2.2 : 1.6} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.15 : 0} />
+        <rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth={active ? 2.2 : 1.6} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.15 : 0} />
       </svg>
     ),
   },
@@ -76,26 +40,37 @@ const tabs = [
     label: "Cont",
     icon: (active: boolean) => (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <circle
-          cx="12" cy="8" r="4"
-          stroke="currentColor"
-          strokeWidth={active ? 2.2 : 1.6}
-          fill={active ? "currentColor" : "none"}
-          fillOpacity={active ? 0.15 : 0}
-        />
-        <path
-          d="M4 20c0-4 3.6-7 8-7s8 3 8 7"
-          stroke="currentColor"
-          strokeWidth={active ? 2.2 : 1.6}
-          strokeLinecap="round"
-        />
+        <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth={active ? 2.2 : 1.6} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.15 : 0} />
+        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth={active ? 2.2 : 1.6} strokeLinecap="round" />
       </svg>
     ),
   },
 ]
 
-export function BottomNav() {
+const planificareTab = {
+  href: "/planificare",
+  label: "Plan",
+  icon: (active: boolean) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth={active ? 2.2 : 1.6} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.12 : 0} />
+      <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth={active ? 2.2 : 1.6} strokeLinecap="round" />
+      <circle cx="9" cy="15" r="1" fill="currentColor" />
+      <circle cx="12" cy="15" r="1" fill="currentColor" />
+      <circle cx="15" cy="15" r="1" fill="currentColor" />
+    </svg>
+  ),
+}
+
+interface Props {
+  role?: string | null
+}
+
+export function BottomNav({ role }: Props) {
   const pathname = usePathname()
+  const canPlan = role === "instrumentist" || role === "admin"
+  const tabs = canPlan
+    ? [baseTabs[0], baseTabs[1], planificareTab, baseTabs[2], baseTabs[3]]
+    : baseTabs
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
