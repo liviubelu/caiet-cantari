@@ -58,35 +58,39 @@ function formatServiceDate(dateStr: string) {
 }
 
 // ── Drag-and-drop hook ────────────────────────────────────────────────────────
-// Uses HTML5 DnD with a drag-handle approach. Visual feedback via direct
-// DOM style manipulation to avoid React re-renders mid-drag.
+// The WHOLE list-item is draggable. dataTransfer.getData() is used as the
+// primary mechanism for identifying the dragged item — it is the most
+// reliable cross-browser approach. Visual feedback via direct DOM style
+// mutation (no React state ⇒ no re-render that could interrupt the drag).
 
 function useDragList<T extends { id: string }>(
   items: T[],
   onReorder: (newItems: T[]) => void
 ) {
-  const dragging = useRef<string | null>(null)
-
-  function handleDragStart(e: React.DragEvent, id: string) {
-    dragging.current = id
+  function handleDragStart(e: React.DragEvent<HTMLElement>, id: string) {
     e.dataTransfer.setData("text/plain", id)
     e.dataTransfer.effectAllowed = "move"
+    // Dim the dragged row slightly
+    requestAnimationFrame(() => { e.currentTarget.style.opacity = "0.4" })
   }
 
   function handleDragOver(e: React.DragEvent<HTMLElement>) {
     e.preventDefault()
     e.dataTransfer.dropEffect = "move"
-    e.currentTarget.style.borderTop = "2px solid #6366f1"
+    e.currentTarget.style.boxShadow = "inset 0 2px 0 0 #6366f1"
   }
 
   function handleDragLeave(e: React.DragEvent<HTMLElement>) {
-    e.currentTarget.style.borderTop = ""
+    // Only clear if we're leaving this element entirely (not entering a child)
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      e.currentTarget.style.boxShadow = ""
+    }
   }
 
   function handleDrop(e: React.DragEvent<HTMLElement>, targetId: string) {
     e.preventDefault()
-    e.currentTarget.style.borderTop = ""
-    const sourceId = dragging.current ?? e.dataTransfer.getData("text/plain")
+    e.currentTarget.style.boxShadow = ""
+    const sourceId = e.dataTransfer.getData("text/plain")
     if (!sourceId || sourceId === targetId) return
     const from = items.findIndex((x) => x.id === sourceId)
     const to   = items.findIndex((x) => x.id === targetId)
@@ -95,11 +99,11 @@ function useDragList<T extends { id: string }>(
     const [removed] = next.splice(from, 1)
     next.splice(to, 0, removed)
     onReorder(next)
-    dragging.current = null
   }
 
-  function handleDragEnd() {
-    dragging.current = null
+  function handleDragEnd(e: React.DragEvent<HTMLElement>) {
+    e.currentTarget.style.opacity = ""
+    e.currentTarget.style.boxShadow = ""
   }
 
   return { handleDragStart, handleDragOver, handleDragLeave, handleDrop, handleDragEnd }
@@ -591,33 +595,38 @@ function PeriodSection({
           {songs.map((song) => (
             <li
               key={song.id}
+              draggable
+              onDragStart={(e) => dragHooks.handleDragStart(e, song.id)}
               onDragOver={(e) => dragHooks.handleDragOver(e)}
               onDragLeave={(e) => dragHooks.handleDragLeave(e)}
               onDrop={(e) => dragHooks.handleDrop(e, song.id)}
-              className="flex items-center gap-2 px-4 py-2.5 group"
+              onDragEnd={(e) => dragHooks.handleDragEnd(e)}
+              className="flex items-center gap-2 px-4 py-2.5 group cursor-grab active:cursor-grabbing transition-opacity"
             >
-              {/* Drag handle — only this part is draggable */}
-              <span
-                draggable
-                onDragStart={(e) => dragHooks.handleDragStart(e, song.id)}
-                onDragEnd={dragHooks.handleDragEnd}
-                className="cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 hover:text-gray-400 flex-shrink-0 p-0.5 -ml-0.5"
-              >
+              {/* Visual drag handle (decorative) */}
+              <span className="text-gray-300 dark:text-gray-600 flex-shrink-0 pointer-events-none">
                 <DragHandle />
               </span>
 
-              <span className="flex-1 min-w-0 text-sm text-gray-800 dark:text-gray-200 truncate">
+              {/* Title — click opens song detail page */}
+              <Link
+                href={`/song/${song.songId}`}
+                draggable={false}
+                className="flex-1 min-w-0 text-sm text-gray-800 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400 truncate transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
                 {song.title}
-              </span>
+              </Link>
 
               {song.key && (
-                <span className="text-[11px] font-mono font-semibold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-md flex-shrink-0">
+                <span className="text-[11px] font-mono font-semibold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-md flex-shrink-0 pointer-events-none">
                   {song.key}
                 </span>
               )}
 
               <button
-                onClick={() => onRemoveSong(song.id)}
+                draggable={false}
+                onClick={(e) => { e.stopPropagation(); onRemoveSong(song.id) }}
                 className="p-1 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition flex-shrink-0"
               >
                 <XIcon />
