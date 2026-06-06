@@ -132,81 +132,109 @@ function SortableSongList({
   }
 
   // ── Mobile swipe-left to mark as sung ────────────────────────────────────
-  // Uses pointer events + touch-action:pan-y (no need for passive:false hack).
-  // touch-action:pan-y tells the browser to only handle vertical scroll;
-  // horizontal pointer events are fully delivered to our handlers.
-  const swipeRef = useRef<{ id: string; startX: number; startY: number; decided: boolean } | null>(null)
+  // Key fix: call setPointerCapture() the moment we confirm horizontal intent.
+  // This hands full pointer control to our element, preventing the browser
+  // from ever stealing the gesture for scroll — the root cause of previous failures.
+  //
+  // UX: swipe reveals a growing green zone; past TRIGGER_PX the zone turns
+  // bright green (confirmed); on release → action fires + spring-back animation.
+
+  const SWIPE_MAX     = 110  // max px the row slides
+  const TRIGGER_PX    = 80   // px needed to trigger action on release
+
+  const swipeRef = useRef<{
+    id: string; startX: number; startY: number
+    decided: boolean; pointerId: number; el: HTMLElement
+  } | null>(null)
   const [swipeState, setSwipeState] = useState<{ id: string; dx: number } | null>(null)
 
   function onRowPointerDown(e: React.PointerEvent<HTMLLIElement>, song: SongItem) {
-    if (e.pointerType === "mouse") return          // desktop: no swipe
+    if (e.pointerType === "mouse") return
     const tgt = e.target as HTMLElement
-    if (tgt.closest("[data-drag], a, button")) return // let handle/link handle it
-    swipeRef.current = { id: song.id, startX: e.clientX, startY: e.clientY, decided: false }
+    if (tgt.closest("[data-drag], a, button")) return
+    swipeRef.current = {
+      id: song.id, startX: e.clientX, startY: e.clientY,
+      decided: false, pointerId: e.pointerId, el: e.currentTarget,
+    }
   }
 
   function onRowPointerMove(e: React.PointerEvent<HTMLLIElement>, id: string) {
-    if (!swipeRef.current || swipeRef.current.id !== id) return
-    const dx = e.clientX - swipeRef.current.startX
-    const dy = e.clientY - swipeRef.current.startY
+    const sr = swipeRef.current
+    if (!sr || sr.id !== id) return
+    const dx = e.clientX - sr.startX
+    const dy = e.clientY - sr.startY
 
-    if (!swipeRef.current.decided) {
-      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return   // wait for intent
-      // If vertical movement is dominant → this is a scroll, abort
-      if (Math.abs(dy) > Math.abs(dx)) { swipeRef.current = null; return }
-      swipeRef.current.decided = true
+    if (!sr.decided) {
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return
+      if (Math.abs(dy) >= Math.abs(dx)) { swipeRef.current = null; return } // scroll wins
+      sr.decided = true
+      // Capture pointer: browser can no longer steal this touch for scroll
+      try { sr.el.setPointerCapture(sr.pointerId) } catch {}
     }
 
-    if (dx < -6) {
-      setSwipeState({ id, dx: Math.max(dx, -80) })
+    if (dx < 0) {
+      setSwipeState({ id, dx: Math.max(dx, -SWIPE_MAX) })
     } else {
       setSwipeState(null)
     }
   }
 
   function onRowPointerUp(e: React.PointerEvent<HTMLLIElement>, song: SongItem) {
-    if (!swipeRef.current || swipeRef.current.id !== song.id) return
-    const dx = e.clientX - swipeRef.current.startX
-    if (swipeRef.current.decided && dx < -55) onToggleSung(song.id, !song.sung)
+    const sr = swipeRef.current
+    if (!sr || sr.id !== song.id) return
+    const dx = e.clientX - sr.startX
+    if (sr.decided && dx < -TRIGGER_PX) onToggleSung(song.id, !song.sung)
     swipeRef.current = null
     setSwipeState(null)
   }
 
   function onRowPointerCancel() { swipeRef.current = null; setSwipeState(null) }
 
-  const isSwiping = (id: string) => swipeState?.id === id
-  const swipeDx   = (id: string) => swipeState?.id === id ? swipeState.dx : 0
+  const swipeDx = (id: string) => swipeState?.id === id ? swipeState.dx : 0
 
   return (
     <ul ref={listRef} className="divide-y divide-gray-50 dark:divide-gray-700/50">
       {renderOrder.map((song, idx) => {
         const isDragging = activeId === song.id
         const posNum     = String(idx + 1).padStart(2, "0")
-        const swiping    = isSwiping(song.id)
         const dx         = swipeDx(song.id)
+        const swiping    = dx < 0
+        const triggered  = dx <= -TRIGGER_PX   // past threshold → bright green
 
         return (
           <li
             key={song.id}
             data-sid={song.id}
-            className={`relative flex items-center gap-2 px-3 py-2.5 group overflow-hidden
+            className={`relative flex items-center gap-2 px-3 py-2.5 group overflow-hidden select-none
               ${isDragging ? "opacity-40" : ""}
               ${song.sung ? "bg-emerald-50/50 dark:bg-emerald-950/20" : ""}
             `}
-            style={{ touchAction: "pan-y", transform: swiping ? `translateX(${dx}px)` : undefined }}
+            style={{
+              touchAction: "pan-y",
+              transform: `translateX(${dx}px)`,
+              transition: swiping ? "none" : "transform 0.25s cubic-bezier(0.25,1,0.5,1)",
+            }}
             onPointerDown={(e) => onRowPointerDown(e, song)}
             onPointerMove={(e) => onRowPointerMove(e, song.id)}
             onPointerUp={(e) => onRowPointerUp(e, song)}
             onPointerCancel={onRowPointerCancel}
           >
-            {/* Swipe-left reveal (mobile): green checkmark behind the row */}
-            {swiping && (
-              <div className="absolute right-0 top-0 bottom-0 w-20 bg-emerald-500 dark:bg-emerald-600 flex items-center justify-center pointer-events-none rounded-r-xl">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                  <path d="M20 6L9 17l-5-5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-            )}
+            {/* Swipe reveal layer — grows as user swipes, turns bright when triggered */}
+            <div
+              className={`absolute right-0 top-0 bottom-0 flex items-center justify-center gap-1.5 px-4 pointer-events-none transition-colors duration-150 ${
+                triggered
+                  ? "bg-emerald-500 dark:bg-emerald-500"
+                  : "bg-emerald-400/80 dark:bg-emerald-700"
+              }`}
+              style={{ width: `${Math.abs(dx) + 16}px` }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M20 6L9 17l-5-5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              {triggered && (
+                <span className="text-white text-xs font-bold whitespace-nowrap">Cântată</span>
+              )}
+            </div>
 
             {/* Drag handle — data-drag prevents swipe detection when pressed */}
             <span
