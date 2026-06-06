@@ -42,7 +42,7 @@ export default async function SongPage({ params }: Props) {
   return (
     <div className="bg-[#f0f2f5] dark:bg-gray-950 flex-1 flex flex-col">
       {/* Sticky gray nav bar — sits above the white card */}
-      <div className="sticky top-0 z-40 bg-[#f0f2f5]/95 dark:bg-gray-950/95 backdrop-blur-sm px-4 lg:px-6 pt-safe-bar pb-3 lg:pt-3 flex items-center justify-between">
+      <div className="sticky top-0 z-40 bg-[#f0f2f5] dark:bg-gray-950 px-4 lg:px-6 pt-safe-bar pb-3 lg:pt-3 flex items-center justify-between">
         <BackButton />
         <div className="flex items-center gap-2">
           {session?.user && canEditSongs(session.user.role) && (

@@ -125,7 +125,7 @@ function SongDetail({
   return (
     <div className="flex-1 overflow-y-auto overscroll-contain">
       {/* Top bar */}
-      <div className="sticky top-0 z-10 bg-[#f0f2f5]/95 dark:bg-gray-950/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 px-4 lg:px-8 py-3 flex items-center justify-between">
+      <div className="sticky top-0 z-10 bg-[#f0f2f5] dark:bg-gray-950 border-b border-gray-200 dark:border-gray-700 px-4 lg:px-8 py-3 flex items-center justify-between">
         <button
           onClick={onBack}
           className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"

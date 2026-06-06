@@ -42,7 +42,7 @@ export default async function HomePage({ searchParams }: Props) {
   return (
     <div className="bg-[#f0f2f5] dark:bg-gray-950 flex-1">
       {/* Sticky header — full width */}
-      <div className="sticky top-0 z-40 bg-[#f0f2f5]/95 dark:bg-gray-950/95 backdrop-blur-sm px-4 lg:px-8 pt-safe-header lg:pt-6 pb-3">
+      <div className="sticky top-0 z-40 bg-[#f0f2f5] dark:bg-gray-950 px-4 lg:px-8 pt-safe-header lg:pt-6 pb-3">
         {/* Mobile-only header row — on desktop this is in the sidebar */}
         <div className="flex items-center justify-between mb-4 lg:hidden">
           <div className="flex items-center gap-2.5">

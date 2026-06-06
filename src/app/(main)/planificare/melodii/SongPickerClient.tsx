@@ -75,7 +75,7 @@ export function SongPickerClient({ allSongs, planId, period, returnDate }: Props
   return (
     <div className="flex-1 flex flex-col">
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-[#f0f2f5]/95 dark:bg-gray-950/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 px-4 lg:px-8 pt-safe-bar pb-3 flex items-center gap-3">
+      <div className="sticky top-0 z-40 bg-[#f0f2f5] dark:bg-gray-950 border-b border-gray-200 dark:border-gray-700 px-4 lg:px-8 pt-safe-bar pb-3 flex items-center gap-3">
         <Link href={backUrl} className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition p-1 -ml-1 rounded-lg">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
             <path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />

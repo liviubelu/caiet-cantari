@@ -715,7 +715,7 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
         <div className="flex-1 flex flex-col lg:overflow-hidden">
 
           {/* Event header */}
-          <div className="flex-shrink-0 sticky top-0 z-20 bg-[#f0f2f5]/95 dark:bg-gray-950/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 px-4 lg:px-6 pt-safe-bar pb-3 lg:pt-4">
+          <div className="flex-shrink-0 sticky top-0 z-20 bg-[#f0f2f5] dark:bg-gray-950 border-b border-gray-200 dark:border-gray-700 px-4 lg:px-6 pt-safe-bar pb-3 lg:pt-4">
             <div className="flex items-center gap-3">
               {/* Back (mobile) */}
               <button onClick={() => setSelected(null)} className="lg:hidden p-1 -ml-1 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
