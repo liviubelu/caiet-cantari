@@ -198,7 +198,7 @@ function SortableSongList({
   const getSwipeDx = (id: string) => swipeDxState?.id === id ? swipeDxState.dx : 0
 
   return (
-    <ul ref={listRef} className="divide-y divide-gray-50 dark:divide-gray-700/50">
+    <ul ref={listRef} className="divide-y divide-gray-50 dark:divide-gray-700/50" style={{ touchAction: "pan-y" }}>
       {renderOrder.map((song, idx) => {
         const isDragging = activeId === song.id
         const posNum     = String(idx + 1).padStart(2, "0")
@@ -215,7 +215,7 @@ function SortableSongList({
               ${song.sung ? "bg-emerald-50/50 dark:bg-emerald-950/20" : ""}
             `}
             style={{
-              touchAction: "pan-y",
+              touchAction: "none",
               transform: isSwiping ? `translateX(${dx}px)` : undefined,
               transition: isSwiping ? "none" : "transform 0.3s cubic-bezier(0.25,1,0.5,1)",
               userSelect: "none",
@@ -825,7 +825,7 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
           </div>
 
           {/* Content area */}
-          <div className="flex-1 lg:overflow-y-auto px-4 lg:px-6 py-4 space-y-4 pb-32 lg:pb-6">
+          <div className="flex-1 lg:overflow-y-auto px-4 lg:px-6 py-4 space-y-4 pb-24 lg:pb-6">
 
             {/* Mobile tabs */}
             <div className="flex lg:hidden gap-2 mb-2">
