@@ -60,21 +60,9 @@ function getDayAbbr(dateStr: string) {
   return abbr[getDayOfWeek(dateStr)]
 }
 
-// ── Key badge ─────────────────────────────────────────────────────────────────
-
-const KEY_COLORS: Record<string, string> = {
-  C: "bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300",
-  D: "bg-orange-100 dark:bg-orange-950 text-orange-700 dark:text-orange-300",
-  E: "bg-yellow-100 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-300",
-  F: "bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300",
-  G: "bg-teal-100 dark:bg-teal-950 text-teal-700 dark:text-teal-300",
-  A: "bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300",
-  B: "bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300",
-}
-function keyColor(key: string | null) {
-  if (!key) return "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-  return KEY_COLORS[key[0].toUpperCase()] ?? "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-}
+// ── Key badge (same style as KeyBadge on home page) ──────────────────────────
+// Rounded rectangle, gray background, mono font — matches the song list cards.
+const KEY_BADGE = "inline-flex items-center justify-center min-w-[28px] h-7 px-1.5 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-[11px] font-semibold font-mono border border-gray-200 dark:border-gray-600 flex-shrink-0"
 
 // ── DnD + sortable list ───────────────────────────────────────────────────────
 
@@ -146,7 +134,6 @@ function SortableSongList({
         const isDragging = draggingId.current === song.id
         const isSwiping  = swipingId === song.id
         const posNum     = String(idx + 1).padStart(2, "0")
-        const kc         = keyColor(song.key)
 
         return (
           <li
@@ -184,14 +171,14 @@ function SortableSongList({
               </svg>
             </span>
 
-            {/* Number / checkmark */}
+            {/* Number / checkmark — always visible */}
             <button
               onClick={() => onToggleSung(song.id, !song.sung)}
               title={song.sung ? "Marchează ca necântată" : "Marchează ca cântată"}
               className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold transition-all
                 ${song.sung
                   ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400"
-                  : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 md:opacity-0 md:group-hover:opacity-100"}
+                  : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"}
               `}
             >
               {song.sung
@@ -212,10 +199,10 @@ function SortableSongList({
               {song.title}
             </Link>
 
-            {/* Key badge */}
+            {/* Key badge — same style as home page */}
             {song.key && (
-              <span className={`w-7 h-7 rounded-full text-[10px] font-bold flex items-center justify-center flex-shrink-0 ${kc}`}>
-                {song.key.length > 3 ? song.key.slice(0, 3) : song.key}
+              <span className={KEY_BADGE}>
+                {song.key}
               </span>
             )}
 
@@ -279,13 +266,23 @@ function PeriodColumn({
         }
       </div>
 
-      {/* Notes */}
+      {/* Notes — auto-resize so all content is always visible */}
       <div className="px-4 py-3 border-t border-gray-50 dark:border-gray-700/50 flex-shrink-0">
         <textarea
           value={notes}
-          onChange={(e) => onNoteChange(notesField, e.target.value)}
+          onChange={(e) => {
+            onNoteChange(notesField, e.target.value)
+            // Auto-grow: reset to auto then set to scrollHeight
+            e.target.style.height = "auto"
+            e.target.style.height = `${e.target.scrollHeight}px`
+          }}
+          onFocus={(e) => {
+            e.target.style.height = "auto"
+            e.target.style.height = `${e.target.scrollHeight}px`
+          }}
           placeholder={`Notă ${title.toLowerCase()}…`}
           rows={2}
+          style={{ overflow: "hidden" }}
           className="w-full bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 text-sm text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 dark:focus:ring-indigo-900 resize-none transition"
         />
       </div>
@@ -724,7 +721,7 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
                   <button key={tab} onClick={() => setActiveTab(tab)}
                     className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all ${activeTab === tab ? "bg-indigo-600 text-white shadow-sm" : "bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600"}`}
                   >
-                    {tab === "morning" ? "🌅" : "🌙"} {tab === "morning" ? "Dimineață" : "Seară"} {cnt > 0 && <span className="ml-1 opacity-70">{cnt}</span>}
+                    {tab === "morning" ? "☀️" : "🌙"} {tab === "morning" ? "Dimineață" : "Seară"} {cnt > 0 && <span className="ml-1 opacity-70">{cnt}</span>}
                   </button>
                 )
               })}
@@ -732,14 +729,14 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
 
             {/* Desktop: two columns */}
             <div className="hidden lg:grid lg:grid-cols-2 gap-4">
-              <PeriodColumn title="Dimineață" emoji="🌅" songs={mornings} period="morning" planId={selected.id} serviceDate={selected.date} notes={notesMorning} notesField="notesMorning" onRemoveSong={removeSong} onReorderSongs={reorderSongs} onToggleSung={toggleSung} onNoteChange={handleNoteChange}/>
+              <PeriodColumn title="Dimineață" emoji="☀️" songs={mornings} period="morning" planId={selected.id} serviceDate={selected.date} notes={notesMorning} notesField="notesMorning" onRemoveSong={removeSong} onReorderSongs={reorderSongs} onToggleSung={toggleSung} onNoteChange={handleNoteChange}/>
               <PeriodColumn title="Seară" emoji="🌙" songs={evenings} period="evening" planId={selected.id} serviceDate={selected.date} notes={notesEvening} notesField="notesEvening" onRemoveSong={removeSong} onReorderSongs={reorderSongs} onToggleSung={toggleSung} onNoteChange={handleNoteChange}/>
             </div>
 
             {/* Mobile: single column with tabs */}
             <div className="lg:hidden">
               {activeTab === "morning"
-                ? <PeriodColumn title="Dimineață" emoji="🌅" songs={mornings} period="morning" planId={selected.id} serviceDate={selected.date} notes={notesMorning} notesField="notesMorning" onRemoveSong={removeSong} onReorderSongs={reorderSongs} onToggleSung={toggleSung} onNoteChange={handleNoteChange}/>
+                ? <PeriodColumn title="Dimineață" emoji="☀️" songs={mornings} period="morning" planId={selected.id} serviceDate={selected.date} notes={notesMorning} notesField="notesMorning" onRemoveSong={removeSong} onReorderSongs={reorderSongs} onToggleSung={toggleSung} onNoteChange={handleNoteChange}/>
                 : <PeriodColumn title="Seară" emoji="🌙" songs={evenings} period="evening" planId={selected.id} serviceDate={selected.date} notes={notesEvening} notesField="notesEvening" onRemoveSong={removeSong} onReorderSongs={reorderSongs} onToggleSung={toggleSung} onNoteChange={handleNoteChange}/>
               }
             </div>
