@@ -132,55 +132,85 @@ function SortableSongList({
   }
 
   // ── Mobile swipe-left to mark as sung ────────────────────────────────────
-  const touchStartX = useRef<Record<string, number>>({})
-  const [swipingId, setSwipingId] = useState<string | null>(null)
-  const [swipeDx, setSwipeDx]     = useState(0)
+  // Uses pointer events + touch-action:pan-y (no need for passive:false hack).
+  // touch-action:pan-y tells the browser to only handle vertical scroll;
+  // horizontal pointer events are fully delivered to our handlers.
+  const swipeRef = useRef<{ id: string; startX: number; startY: number; decided: boolean } | null>(null)
+  const [swipeState, setSwipeState] = useState<{ id: string; dx: number } | null>(null)
 
-  function onTouchStart(e: React.TouchEvent, id: string) {
-    touchStartX.current[id] = e.touches[0].clientX
+  function onRowPointerDown(e: React.PointerEvent<HTMLLIElement>, song: SongItem) {
+    if (e.pointerType === "mouse") return          // desktop: no swipe
+    const tgt = e.target as HTMLElement
+    if (tgt.closest("[data-drag], a, button")) return // let handle/link handle it
+    swipeRef.current = { id: song.id, startX: e.clientX, startY: e.clientY, decided: false }
   }
-  function onTouchMove(e: React.TouchEvent, id: string) {
-    const dx = e.touches[0].clientX - (touchStartX.current[id] ?? 0)
-    if (dx < 0) { setSwipingId(id); setSwipeDx(Math.max(dx, -80)) }
+
+  function onRowPointerMove(e: React.PointerEvent<HTMLLIElement>, id: string) {
+    if (!swipeRef.current || swipeRef.current.id !== id) return
+    const dx = e.clientX - swipeRef.current.startX
+    const dy = e.clientY - swipeRef.current.startY
+
+    if (!swipeRef.current.decided) {
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return   // wait for intent
+      // If vertical movement is dominant → this is a scroll, abort
+      if (Math.abs(dy) > Math.abs(dx)) { swipeRef.current = null; return }
+      swipeRef.current.decided = true
+    }
+
+    if (dx < -6) {
+      setSwipeState({ id, dx: Math.max(dx, -80) })
+    } else {
+      setSwipeState(null)
+    }
   }
-  function onTouchEnd(e: React.TouchEvent, id: string, currentSung: boolean) {
-    const dx = e.changedTouches[0].clientX - (touchStartX.current[id] ?? 0)
-    if (dx < -55) onToggleSung(id, !currentSung)
-    setSwipingId(null); setSwipeDx(0)
-    delete touchStartX.current[id]
+
+  function onRowPointerUp(e: React.PointerEvent<HTMLLIElement>, song: SongItem) {
+    if (!swipeRef.current || swipeRef.current.id !== song.id) return
+    const dx = e.clientX - swipeRef.current.startX
+    if (swipeRef.current.decided && dx < -55) onToggleSung(song.id, !song.sung)
+    swipeRef.current = null
+    setSwipeState(null)
   }
+
+  function onRowPointerCancel() { swipeRef.current = null; setSwipeState(null) }
+
+  const isSwiping = (id: string) => swipeState?.id === id
+  const swipeDx   = (id: string) => swipeState?.id === id ? swipeState.dx : 0
 
   return (
     <ul ref={listRef} className="divide-y divide-gray-50 dark:divide-gray-700/50">
       {renderOrder.map((song, idx) => {
         const isDragging = activeId === song.id
-        const isSwiping  = swipingId === song.id
         const posNum     = String(idx + 1).padStart(2, "0")
+        const swiping    = isSwiping(song.id)
+        const dx         = swipeDx(song.id)
 
         return (
           <li
             key={song.id}
             data-sid={song.id}
-            className={`relative flex items-center gap-2 px-3 py-2.5 group transition-all overflow-hidden
+            className={`relative flex items-center gap-2 px-3 py-2.5 group overflow-hidden
               ${isDragging ? "opacity-40" : ""}
               ${song.sung ? "bg-emerald-50/50 dark:bg-emerald-950/20" : ""}
             `}
-            style={isSwiping ? { transform: `translateX(${swipeDx}px)` } : undefined}
-            onTouchStart={(e) => onTouchStart(e, song.id)}
-            onTouchMove={(e) => onTouchMove(e, song.id)}
-            onTouchEnd={(e) => onTouchEnd(e, song.id, song.sung)}
+            style={{ touchAction: "pan-y", transform: swiping ? `translateX(${dx}px)` : undefined }}
+            onPointerDown={(e) => onRowPointerDown(e, song)}
+            onPointerMove={(e) => onRowPointerMove(e, song.id)}
+            onPointerUp={(e) => onRowPointerUp(e, song)}
+            onPointerCancel={onRowPointerCancel}
           >
-            {/* Swipe hint (mobile) */}
-            {isSwiping && (
-              <div className="absolute right-0 top-0 bottom-0 w-20 bg-emerald-500 flex items-center justify-end pr-3 pointer-events-none">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            {/* Swipe-left reveal (mobile): green checkmark behind the row */}
+            {swiping && (
+              <div className="absolute right-0 top-0 bottom-0 w-20 bg-emerald-500 dark:bg-emerald-600 flex items-center justify-center pointer-events-none rounded-r-xl">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
                   <path d="M20 6L9 17l-5-5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
             )}
 
-            {/* Drag handle — all pointer events captured here after pointerDown */}
+            {/* Drag handle — data-drag prevents swipe detection when pressed */}
             <span
+              data-drag="true"
               onPointerDown={(e) => onPointerDown(e, song.id)}
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
@@ -324,7 +354,8 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
   const [events, setEvents] = useState<ServicePlan[]>([])
   const [selected, setSelected] = useState<ServicePlan | null>(null)
   const [activeTab, setActiveTab] = useState<"morning"|"evening">("morning")
-  const [restoredId, setRestoredId] = useState<string | null>(null)
+  const [restoredId, setRestoredId]   = useState<string | null>(null)
+  const [isRestoring, setIsRestoring] = useState(false)
 
   // Create event modal
   const [showCreate, setShowCreate] = useState(false)
@@ -384,7 +415,7 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
     const byId   = events.find(e => e.id === restoredId)
     const byDate = events.find(e => e.date === restoredId)
     const plan   = byId ?? byDate
-    if (plan) { setSelected(plan); setRestoredId(null) }
+    if (plan) { setSelected(plan); setRestoredId(null); setIsRestoring(false) }
   }, [events, restoredId])
 
   // On mount: restore selected event from sessionStorage (back-navigation)
@@ -421,6 +452,7 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
       const [y, m] = savedDate.split("-").map(Number)
       if (y && m) { setYear(y); setMonth(m - 1) }
       setRestoredId(savedId)
+      setIsRestoring(true)  // show spinner until events load + selection restored
     }
   }, [])
 
@@ -565,7 +597,7 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
     <div className="flex-1 flex flex-col lg:flex-row lg:overflow-hidden">
 
       {/* ── LEFT PANEL ─────────────────────────────────────────────────── */}
-      <div className={`${selected ? "hidden lg:flex" : "flex"} flex-col lg:w-72 xl:w-80 lg:border-r border-gray-200 dark:border-gray-700 lg:overflow-y-auto flex-shrink-0`}>
+      <div className={`${(selected || isRestoring) ? "hidden lg:flex" : "flex"} flex-col lg:w-72 xl:w-80 lg:border-r border-gray-200 dark:border-gray-700 lg:overflow-y-auto flex-shrink-0`}>
 
         {/* Month nav + create button */}
         <div className="px-4 lg:px-5 pt-safe-header lg:pt-5 pb-2 flex items-center justify-between">
@@ -839,6 +871,16 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
               </div>
             </div>
 
+          </div>
+        </div>
+      ) : isRestoring ? (
+        /* Loading spinner while restoring selection after Back navigation */
+        <div className="hidden lg:flex flex-1 items-center justify-center">
+          <div className="text-center">
+            <svg className="animate-spin w-8 h-8 text-indigo-400 dark:text-indigo-500 mx-auto mb-3" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="31 11" strokeLinecap="round"/>
+            </svg>
+            <p className="text-sm text-gray-400 dark:text-gray-500">Se încarcă…</p>
           </div>
         </div>
       ) : (
