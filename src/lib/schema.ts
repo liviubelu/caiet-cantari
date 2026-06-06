@@ -52,10 +52,11 @@ export const favorites = pgTable("favorites", {
 
 // ── Service planning ──────────────────────────────────────────────────────────
 
-/** One record per Sunday (or any special date). */
+/** One record per event (multiple events per day allowed). */
 export const servicePlans = pgTable("service_plans", {
   id: uuid("id").primaryKey().defaultRandom(),
-  date: text("date").notNull().unique(), // "YYYY-MM-DD"
+  date: text("date").notNull(), // "YYYY-MM-DD" — no longer unique (multiple events/day)
+  eventType: text("event_type").notNull().default("slujba"), // slujba|nunta|binecuvantare|priveghi|inmormantare
   notesMorning: text("notes_morning").default(""),
   notesEvening: text("notes_evening").default(""),
   createdAt: timestamp("created_at").defaultNow(),
@@ -70,6 +71,7 @@ export const servicePlanSongs = pgTable("service_plan_songs", {
   period: text("period").notNull(), // "morning" | "evening"
   position: integer("position").notNull().default(0),
   key: text("key"), // auto-filled from song.defaultKey
+  sung: boolean("sung").notNull().default(false), // marked as sung during service
 })
 
 /** Person serving at a service (free text name or from user list). */
