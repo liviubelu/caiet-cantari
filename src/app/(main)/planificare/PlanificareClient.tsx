@@ -65,6 +65,12 @@ function getDayAbbr(dateStr: string) {
 const KEY_BADGE = "inline-flex items-center justify-center min-w-[28px] h-7 px-1.5 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-[11px] font-semibold font-mono border border-gray-200 dark:border-gray-600 flex-shrink-0"
 
 // ── DnD + sortable list ───────────────────────────────────────────────────────
+// Uses the "delta-from-start" approach:
+// • onPointerDown captures the start Y and a snapshot of the order.
+// • onPointerMove computes the target index from (currentY - startY) / rowHeight
+//   and rebuilds the list from the snapshot — no incremental swaps, no
+//   error accumulation, no stale-closure bugs.
+// • onPointerUp persists the final order to the API.
 
 function SortableSongList({
   songs, onRemoveSong, onReorder, onToggleSung,
@@ -74,39 +80,55 @@ function SortableSongList({
   onReorder: (newItems: SongItem[]) => void
   onToggleSung: (id: string, sung: boolean) => void
 }) {
-  const [order, setOrder] = useState<SongItem[]>(songs)
+  const [renderOrder, setRenderOrder] = useState<SongItem[]>(songs)
+  const [activeId, setActiveId] = useState<string | null>(null)
   const listRef    = useRef<HTMLUListElement>(null)
-  const draggingId = useRef<string | null>(null)
+  // Captured at drag-start, never mutated during a drag
+  const startY     = useRef(0)
+  const startIdx   = useRef(0)
+  const startOrder = useRef<SongItem[]>([])
+  const rowHeight  = useRef(44)
 
-  useEffect(() => { setOrder(songs) }, [songs])
+  useEffect(() => { if (!activeId) setRenderOrder(songs) }, [songs, activeId])
 
-  // ── Pointer DnD (desktop + touch) ────────────────────────────────────────
+  // ── Pointer DnD ───────────────────────────────────────────────────────────
   function onPointerDown(e: React.PointerEvent<HTMLSpanElement>, id: string) {
     e.preventDefault()
     e.currentTarget.setPointerCapture(e.pointerId)
-    draggingId.current = id
-  }
-  function onPointerMove(e: React.PointerEvent<HTMLSpanElement>) {
-    if (!draggingId.current || !listRef.current) return
-    const rows = Array.from(listRef.current.querySelectorAll<HTMLLIElement>("li[data-sid]"))
-    const curIdx = rows.findIndex(r => r.dataset.sid === draggingId.current)
-    if (curIdx < 0) return
-    for (let i = 0; i < rows.length; i++) {
-      if (i === curIdx) continue
-      const { top, height } = rows[i].getBoundingClientRect()
-      const mid = top + height / 2
-      if (i < curIdx && e.clientY < mid) {
-        setOrder(prev => { const n=[...prev]; const f=n.findIndex(s=>s.id===draggingId.current); const [r]=n.splice(f,1); n.splice(i,0,r); return n }); break
-      }
-      if (i > curIdx && e.clientY > mid) {
-        setOrder(prev => { const n=[...prev]; const f=n.findIndex(s=>s.id===draggingId.current); const [r]=n.splice(f,1); n.splice(i,0,r); return n }); break
-      }
+
+    // Snapshot everything needed for this drag
+    startY.current    = e.clientY
+    startOrder.current = [...renderOrder]
+    startIdx.current  = renderOrder.findIndex(s => s.id === id)
+
+    // Measure real row height from the DOM
+    const rows = listRef.current?.querySelectorAll<HTMLLIElement>("li[data-sid]")
+    if (rows && rows.length > 0) {
+      const heights = Array.from(rows).map(r => r.getBoundingClientRect().height)
+      rowHeight.current = heights.reduce((a, b) => a + b, 0) / heights.length
     }
+
+    setActiveId(id)
   }
+
+  function onPointerMove(e: React.PointerEvent<HTMLSpanElement>) {
+    if (!activeId) return
+    const deltaY    = e.clientY - startY.current
+    const steps     = Math.round(deltaY / rowHeight.current)
+    const len       = startOrder.current.length
+    const targetIdx = Math.max(0, Math.min(len - 1, startIdx.current + steps))
+
+    // Rebuild from snapshot — independent of previous moves
+    const next = [...startOrder.current]
+    const [removed] = next.splice(startIdx.current, 1)
+    next.splice(targetIdx, 0, removed)
+    setRenderOrder(next)
+  }
+
   function onPointerUp() {
-    if (!draggingId.current) return
-    draggingId.current = null
-    setOrder(cur => { onReorder(cur); return cur })
+    if (!activeId) return
+    setActiveId(null)
+    setRenderOrder(cur => { onReorder(cur); return cur })
   }
 
   // ── Mobile swipe-left to mark as sung ────────────────────────────────────
@@ -130,8 +152,8 @@ function SortableSongList({
 
   return (
     <ul ref={listRef} className="divide-y divide-gray-50 dark:divide-gray-700/50">
-      {order.map((song, idx) => {
-        const isDragging = draggingId.current === song.id
+      {renderOrder.map((song, idx) => {
+        const isDragging = activeId === song.id
         const isSwiping  = swipingId === song.id
         const posNum     = String(idx + 1).padStart(2, "0")
 
@@ -157,11 +179,12 @@ function SortableSongList({
               </div>
             )}
 
-            {/* Drag handle */}
+            {/* Drag handle — all pointer events captured here after pointerDown */}
             <span
               onPointerDown={(e) => onPointerDown(e, song.id)}
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
+              onPointerCancel={onPointerUp}
               className="cursor-grab active:cursor-grabbing touch-none text-gray-300 dark:text-gray-600 hover:text-gray-400 flex-shrink-0 p-0.5 select-none"
             >
               <svg width="12" height="14" viewBox="0 0 12 14" fill="currentColor">
@@ -301,6 +324,7 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
   const [events, setEvents] = useState<ServicePlan[]>([])
   const [selected, setSelected] = useState<ServicePlan | null>(null)
   const [activeTab, setActiveTab] = useState<"morning"|"evening">("morning")
+  const [restoredId, setRestoredId] = useState<string | null>(null)
 
   // Create event modal
   const [showCreate, setShowCreate] = useState(false)
@@ -346,31 +370,57 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
     setNotesEvening(selected?.notesEvening ?? "")
   }, [selected?.id])
 
-  // Auto-select from URL param
+  // Persist selected event to sessionStorage (for back-navigation restore)
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const date = params.get("date")
-    const planId = params.get("planId")
-    if (planId || date) {
+    if (selected) {
+      sessionStorage.setItem("planSelectedId",   selected.id)
+      sessionStorage.setItem("planSelectedDate", selected.date)
+    }
+  }, [selected?.id])
+
+  // When events load, restore the previously-selected event (after back-nav)
+  useEffect(() => {
+    if (!restoredId || events.length === 0) return
+    const byId   = events.find(e => e.id === restoredId)
+    const byDate = events.find(e => e.date === restoredId)
+    const plan   = byId ?? byDate
+    if (plan) { setSelected(plan); setRestoredId(null) }
+  }, [events, restoredId])
+
+  // On mount: restore selected event from sessionStorage (back-navigation)
+  // or from URL params (returning from song picker).
+  useEffect(() => {
+    const params  = new URLSearchParams(window.location.search)
+    const urlDate = params.get("date")
+    const urlPlan = params.get("planId")
+
+    if (urlPlan || urlDate) {
+      // Came back from the song picker page
       const url = new URL(window.location.href)
       url.searchParams.delete("date")
       url.searchParams.delete("planId")
       window.history.replaceState({}, "", url.toString())
-      if (planId) {
-        // wait for events to load, then select
-        const try_ = () => {
-          const found = events.find(e => e.id === planId)
-          if (found) { setSelected(found); return }
-          const byDate = date ? events.find(e => e.date === date) : null
-          if (byDate) setSelected(byDate)
-        }
-        setTimeout(try_, 300)
-      } else if (date) {
-        setTimeout(() => {
-          const found = events.find(e => e.date === date)
-          if (found) setSelected(found)
-        }, 300)
+      const id = urlPlan ?? null
+      const dt = urlDate ?? null
+      if (id) {
+        const [y, m] = (dt ?? "").split("-").map(Number)
+        if (y && m) { setYear(y); setMonth(m - 1) }
+        setRestoredId(id)
+      } else if (dt) {
+        const [y, m] = dt.split("-").map(Number)
+        if (y && m) { setYear(y); setMonth(m - 1) }
+        setRestoredId(dt) // will be matched by date below
       }
+      return
+    }
+
+    // Came back via browser Back button → restore from sessionStorage
+    const savedId   = sessionStorage.getItem("planSelectedId")
+    const savedDate = sessionStorage.getItem("planSelectedDate")
+    if (savedId && savedDate) {
+      const [y, m] = savedDate.split("-").map(Number)
+      if (y && m) { setYear(y); setMonth(m - 1) }
+      setRestoredId(savedId)
     }
   }, [])
 
@@ -542,8 +592,8 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
           ))}
         </div>
 
-        {/* Calendar cells */}
-        <div className="grid grid-cols-7 px-3 gap-y-0.5">
+        {/* Calendar cells — gap-1 so adjacent cells (e.g. today + selected) don't merge visually */}
+        <div className="grid grid-cols-7 px-3 gap-1">
           {cells.map((day, i) => {
             if (!day) return <div key={i}/>
             const dateStr   = toDateStr(year, month, day)
