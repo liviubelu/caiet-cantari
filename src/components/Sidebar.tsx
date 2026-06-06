@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { ChurchIcon } from "@/components/ChurchIcon"
 import { PwaInstallButton } from "@/components/PwaInstallButton"
 
@@ -72,6 +73,10 @@ const navItems = [
 
 export function Sidebar({ user }: { user: SidebarUser | null }) {
   const pathname = usePathname()
+  // Live client-side session so role changes (login / admin promote) reflect
+  // immediately without a full page reload.
+  const { data: session } = useSession()
+  const liveRole = (session?.user as { role?: string } | undefined)?.role ?? user?.role
 
   const initials = user?.name
     ? user.name.split(" ").map((w: string) => w[0]).slice(0, 2).join("").toUpperCase()
@@ -95,7 +100,7 @@ export function Sidebar({ user }: { user: SidebarUser | null }) {
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {navItems
-          .filter((item) => !("instrumentistOnly" in item) || canEdit(user?.role))
+          .filter((item) => !("instrumentistOnly" in item) || canEdit(liveRole))
           .map((item) => {
             const active = pathname === item.href
             return (
@@ -116,7 +121,7 @@ export function Sidebar({ user }: { user: SidebarUser | null }) {
 
         <div className="h-px bg-gray-100 dark:bg-gray-700 my-2" />
 
-        {canEdit(user?.role) && (
+        {canEdit(liveRole) && (
           <Link
             href="/adauga"
             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${

@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useSession } from "next-auth/react"
 
 const baseTabs = [
   {
@@ -62,11 +63,15 @@ const planificareTab = {
 }
 
 interface Props {
-  role?: string | null
+  role?: string | null  // server-side initial value (may be stale after login)
 }
 
-export function BottomNav({ role }: Props) {
+export function BottomNav({ role: propRole }: Props) {
   const pathname = usePathname()
+  // useSession() gives the live client-side session — always up-to-date after
+  // sign-in / role change without needing a full page reload.
+  const { data: session } = useSession()
+  const role    = (session?.user as { role?: string } | undefined)?.role ?? propRole
   const canPlan = role === "instrumentist" || role === "admin"
   const tabs = canPlan
     ? [baseTabs[0], baseTabs[1], planificareTab, baseTabs[2], baseTabs[3]]
