@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { usePathname, useRouter } from "next/navigation"
 
 interface Props {
   songId: string
@@ -11,6 +12,8 @@ interface Props {
 export function FavoriteButton({ songId, initialFavorited, onToggle }: Props) {
   const [favorited, setFavorited] = useState(initialFavorited)
   const [loading, setLoading] = useState(false)
+  const pathname = usePathname()
+  const router = useRouter()
 
   async function toggle() {
     if (loading) return
@@ -25,6 +28,9 @@ export function FavoriteButton({ songId, initialFavorited, onToggle }: Props) {
       if (res.ok) {
         setFavorited(!favorited)
         onToggle?.(!favorited)
+        // On the favorites page, drop the card immediately so the list and
+        // its stats stay in sync (otherwise an unfavorited song lingers).
+        if (pathname === "/favorite") router.refresh()
       }
     } finally {
       setLoading(false)

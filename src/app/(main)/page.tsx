@@ -72,8 +72,8 @@ export default async function HomePage({ searchParams }: Props) {
                 {initials}
               </Link>
             ) : (
-              <Link href="/login" className="text-xs font-semibold text-indigo-700 hover:underline">
-                Login
+              <Link href="/login" className="text-xs font-semibold text-indigo-700 dark:text-indigo-400 hover:underline">
+                Conectează-te
               </Link>
             )}
           </div>

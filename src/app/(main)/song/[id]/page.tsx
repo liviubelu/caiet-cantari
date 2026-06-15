@@ -68,7 +68,7 @@ export default async function SongPage({ params }: Props) {
               {song.category && (
                 <span
                   className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
-                  style={{ backgroundColor: cat.light, color: cat.color }}
+                  style={{ backgroundColor: `${cat.color}1a`, color: cat.color }}
                 >
                   {song.category}
                 </span>
@@ -76,8 +76,11 @@ export default async function SongPage({ params }: Props) {
             </div>
           </div>
 
-          {/* Controls + lyrics — rendered by the client component */}
+          {/* Controls + lyrics — rendered by the client component.
+              key={song.id} forces a fresh instance per song so transpose /
+              chords-toggle state never bleeds from a previously opened song. */}
           <SongDetailClient
+            key={song.id}
             content={song.content}
             defaultKey={song.defaultKey}
             songId={song.id}

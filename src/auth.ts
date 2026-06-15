@@ -18,7 +18,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Credentials({
       credentials: { email: {}, password: {} },
       async authorize(credentials) {
-        const email = credentials?.email as string
+        const email = (credentials?.email as string)?.toLowerCase().trim()
         const password = credentials?.password as string
         if (!email || !password) return null
 

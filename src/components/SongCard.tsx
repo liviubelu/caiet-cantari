@@ -32,7 +32,7 @@ export function SongCard({ song, favorited = false, showCategory = false, authen
         {showCategory && song.category && (
           <span
             className="inline-block mt-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full"
-            style={{ backgroundColor: cat.light, color: cat.color }}
+            style={{ backgroundColor: `${cat.color}1a`, color: cat.color }}
           >
             {song.category}
           </span>

@@ -136,7 +136,7 @@ export function SongPickerClient({ allSongs, planId, period, returnDate }: Props
                           <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">{song.firstLine}</p>
                         )}
                         {cat && song.category && (
-                          <span className="inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: cat.light, color: cat.color }}>
+                          <span className="inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: `${cat.color}1a`, color: cat.color }}>
                             {song.category}
                           </span>
                         )}

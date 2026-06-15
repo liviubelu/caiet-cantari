@@ -290,7 +290,7 @@ export function SongForm({ songId, initialValues }: Props) {
                   {category && (
                     <span
                       className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
-                      style={{ backgroundColor: getCategoryColor(category).light, color: getCategoryColor(category).color }}
+                      style={{ backgroundColor: `${getCategoryColor(category).color}1a`, color: getCategoryColor(category).color }}
                     >
                       {category}
                     </span>
