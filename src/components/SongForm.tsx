@@ -228,7 +228,7 @@ export function SongForm({ songId, initialValues }: Props) {
               placeholder={PLACEHOLDER}
               required
               rows={14}
-              className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 text-sm font-mono text-gray-900 dark:text-gray-100 placeholder-gray-200 dark:placeholder-gray-600 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition resize-none leading-relaxed"
+              className="w-full lg:h-[calc(100dvh_-_23rem)] lg:min-h-[20rem] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 text-sm font-mono text-gray-900 dark:text-gray-100 placeholder-gray-200 dark:placeholder-gray-600 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition resize-none leading-relaxed"
             />
             <p className="mt-1.5 text-[11px] text-gray-400 dark:text-gray-500">
               Acorduri:{" "}
@@ -289,7 +289,7 @@ export function SongForm({ songId, initialValues }: Props) {
                 </div>
               )}
             </div>
-            <div className="px-5 py-4 max-h-[65vh] overflow-y-auto">
+            <div className="px-5 py-4 max-h-[65vh] lg:max-h-[calc(100dvh_-_19rem)] overflow-y-auto">
               {content.trim() ? (
                 <ChordProDisplay content={content} />
               ) : (
