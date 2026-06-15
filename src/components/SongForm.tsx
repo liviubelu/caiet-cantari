@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useCallback } from "react"
+import { useState, useRef, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { ChordProDisplay } from "./ChordProDisplay"
 import { KeyBadge } from "./KeyBadge"
@@ -40,6 +40,16 @@ export function SongForm({ songId, initialValues }: Props) {
   const [error, setError] = useState("")
 
   const diatonicChords = getDiatonicChords(defaultKey)
+
+  // Auto-grow the editor so a short song leaves no tall empty box (and the page
+  // doesn't scroll for it). Long songs grow up to the CSS max-height, then the
+  // textarea scrolls internally.
+  useEffect(() => {
+    const ta = textareaRef.current
+    if (!ta) return
+    ta.style.height = "auto"
+    ta.style.height = `${ta.scrollHeight}px`
+  }, [content])
 
   const insertAtCursor = useCallback((text: string) => {
     const textarea = textareaRef.current
@@ -227,8 +237,8 @@ export function SongForm({ songId, initialValues }: Props) {
               onChange={(e) => setContent(e.target.value)}
               placeholder={PLACEHOLDER}
               required
-              rows={14}
-              className="w-full lg:h-[calc(100dvh_-_23rem)] lg:min-h-[20rem] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 text-sm font-mono text-gray-900 dark:text-gray-100 placeholder-gray-200 dark:placeholder-gray-600 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition resize-none leading-relaxed"
+              rows={8}
+              className="w-full min-h-[8rem] max-h-[60vh] lg:max-h-[calc(100dvh_-_23rem)] overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 text-sm font-mono text-gray-900 dark:text-gray-100 placeholder-gray-200 dark:placeholder-gray-600 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition resize-none leading-relaxed"
             />
             <p className="mt-1.5 text-[11px] text-gray-400 dark:text-gray-500">
               Acorduri:{" "}
