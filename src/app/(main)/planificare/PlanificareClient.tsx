@@ -922,8 +922,11 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
             {/* Date */}
             <div className="mb-4">
               <label className="block text-[11px] font-semibold tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-1.5">Data</label>
+              {/* appearance-none on mobile: iOS date inputs otherwise ignore
+                  width:100% and overflow to the right. lg:appearance-auto keeps
+                  the native calendar button on desktop. */}
               <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
-                className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:border-indigo-400 transition"
+                className="block w-full min-w-0 appearance-none lg:appearance-auto bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:border-indigo-400 transition"
               />
             </div>
 
