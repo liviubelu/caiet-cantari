@@ -64,15 +64,14 @@ function getDayAbbr(dateStr: string) {
 // Rounded rectangle, gray background, mono font — matches the song list cards.
 const KEY_BADGE = "inline-flex items-center justify-center min-w-[28px] h-7 px-1.5 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-[11px] font-semibold font-mono border border-gray-200 dark:border-gray-600 flex-shrink-0"
 
-// ── DnD + sortable list ───────────────────────────────────────────────────────
-// Uses the "delta-from-start" approach:
-// • onPointerDown captures the start Y and a snapshot of the order.
-// • onPointerMove computes the target index from (currentY - startY) / rowHeight
-//   and rebuilds the list from the snapshot — no incremental swaps, no
-//   error accumulation, no stale-closure bugs.
-// • onPointerUp persists the final order to the API.
+// ── Song list with up/down reorder buttons ─────────────────────────────────────
+// No drag-and-drop — reordering uses explicit up/down buttons, which are far more
+// reliable on touch. Each button swaps the row with its neighbour and persists the
+// new order via onReorder. A mobile swipe-left still marks a song as sung; the
+// reorder / delete / toggle controls carry [data-noswipe] so a tap never starts a
+// swipe.
 
-function SortableSongList({
+function SongList({
   songs, onRemoveSong, onReorder, onToggleSung,
 }: {
   songs: SongItem[]
@@ -80,59 +79,17 @@ function SortableSongList({
   onReorder: (newItems: SongItem[]) => void
   onToggleSung: (id: string, sung: boolean) => void
 }) {
-  const [renderOrder, setRenderOrder] = useState<SongItem[]>(songs)
-  const [activeId, setActiveId] = useState<string | null>(null)
-  const listRef    = useRef<HTMLUListElement>(null)
-  // Captured at drag-start, never mutated during a drag
-  const startY     = useRef(0)
-  const startIdx   = useRef(0)
-  const startOrder = useRef<SongItem[]>([])
-  const rowHeight  = useRef(44)
-
-  useEffect(() => { if (!activeId) setRenderOrder(songs) }, [songs, activeId])
-
-  // ── Pointer DnD ───────────────────────────────────────────────────────────
-  function onPointerDown(e: React.PointerEvent<HTMLSpanElement>, id: string) {
-    e.preventDefault()
-    e.currentTarget.setPointerCapture(e.pointerId)
-
-    // Snapshot everything needed for this drag
-    startY.current    = e.clientY
-    startOrder.current = [...renderOrder]
-    startIdx.current  = renderOrder.findIndex(s => s.id === id)
-
-    // Measure real row height from the DOM
-    const rows = listRef.current?.querySelectorAll<HTMLLIElement>("li[data-sid]")
-    if (rows && rows.length > 0) {
-      const heights = Array.from(rows).map(r => r.getBoundingClientRect().height)
-      rowHeight.current = heights.reduce((a, b) => a + b, 0) / heights.length
-    }
-
-    setActiveId(id)
-  }
-
-  function onPointerMove(e: React.PointerEvent<HTMLSpanElement>) {
-    if (!activeId) return
-    const deltaY    = e.clientY - startY.current
-    const steps     = Math.round(deltaY / rowHeight.current)
-    const len       = startOrder.current.length
-    const targetIdx = Math.max(0, Math.min(len - 1, startIdx.current + steps))
-
-    // Rebuild from snapshot — independent of previous moves
-    const next = [...startOrder.current]
-    const [removed] = next.splice(startIdx.current, 1)
-    next.splice(targetIdx, 0, removed)
-    setRenderOrder(next)
-  }
-
-  function onPointerUp() {
-    if (!activeId) return
-    setActiveId(null)
-    setRenderOrder(cur => { onReorder(cur); return cur })
+  // Swap a row with its neighbour and persist the new order
+  function move(index: number, dir: -1 | 1) {
+    const target = index + dir
+    if (target < 0 || target >= songs.length) return
+    const next = [...songs]
+    ;[next[index], next[target]] = [next[target], next[index]]
+    onReorder(next)
   }
 
   // ── Mobile swipe-left to mark as sung ────────────────────────────────────
-  // Entire row is the swipe zone (only drag handle excluded).
+  // Entire row is the swipe zone ([data-noswipe] controls excluded).
   // setPointerCapture fires the moment we confirm horizontal intent,
   // preventing the browser from stealing the touch for scroll.
 
@@ -149,8 +106,8 @@ function SortableSongList({
 
   function onRowPointerDown(e: React.PointerEvent<HTMLLIElement>, song: SongItem) {
     if (e.pointerType === "mouse") return
-    // Only exclude the drag handle — title, buttons etc. are all swipeable
-    if ((e.target as HTMLElement).closest("[data-drag]")) return
+    // Exclude the reorder / delete / toggle controls so a tap never starts a swipe
+    if ((e.target as HTMLElement).closest("[data-noswipe]")) return
     didSwipeRef.current = false
     swipeRef.current = {
       id: song.id, startX: e.clientX, startY: e.clientY,
@@ -198,24 +155,23 @@ function SortableSongList({
   const getSwipeDx = (id: string) => swipeDxState?.id === id ? swipeDxState.dx : 0
 
   return (
-    <ul ref={listRef} className="divide-y divide-gray-50 dark:divide-gray-700/50" style={{ touchAction: "pan-y" }}>
-      {renderOrder.map((song, idx) => {
-        const isDragging = activeId === song.id
-        const posNum     = String(idx + 1).padStart(2, "0")
-        const dx         = getSwipeDx(song.id)
-        const isSwiping  = dx < -4
+    <ul className="divide-y divide-gray-50 dark:divide-gray-700/50">
+      {songs.map((song, idx) => {
+        const posNum      = String(idx + 1).padStart(2, "0")
+        const dx          = getSwipeDx(song.id)
+        const isSwiping   = dx < -4
         const isTriggered = dx <= -TRIGGER_PX
+        const isFirst     = idx === 0
+        const isLast      = idx === songs.length - 1
 
         return (
           <li
             key={song.id}
-            data-sid={song.id}
             className={`relative flex items-center gap-2 px-3 py-2.5 group overflow-hidden
-              ${isDragging ? "opacity-40" : ""}
               ${song.sung ? "bg-emerald-50/50 dark:bg-emerald-950/20" : ""}
             `}
             style={{
-              touchAction: "none",
+              touchAction: "pan-y",
               transform: isSwiping ? `translateX(${dx}px)` : undefined,
               transition: isSwiping ? "none" : "transform 0.3s cubic-bezier(0.25,1,0.5,1)",
               userSelect: "none",
@@ -239,24 +195,9 @@ function SortableSongList({
               </div>
             )}
 
-            {/* Drag handle — data-drag prevents swipe detection when pressed */}
-            <span
-              data-drag="true"
-              onPointerDown={(e) => onPointerDown(e, song.id)}
-              onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp}
-              onPointerCancel={onPointerUp}
-              className="cursor-grab active:cursor-grabbing touch-none text-gray-300 dark:text-gray-600 hover:text-gray-400 flex-shrink-0 p-0.5 select-none"
-            >
-              <svg width="12" height="14" viewBox="0 0 12 14" fill="currentColor">
-                <circle cx="3" cy="2.5" r="1.3"/><circle cx="9" cy="2.5" r="1.3"/>
-                <circle cx="3" cy="7"   r="1.3"/><circle cx="9" cy="7"   r="1.3"/>
-                <circle cx="3" cy="11.5" r="1.3"/><circle cx="9" cy="11.5" r="1.3"/>
-              </svg>
-            </span>
-
-            {/* Number / checkmark — always visible */}
+            {/* Number / checkmark — tap to toggle sung */}
             <button
+              data-noswipe
               onClick={() => onToggleSung(song.id, !song.sung)}
               title={song.sung ? "Marchează ca necântată" : "Marchează ca cântată"}
               className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold transition-all
@@ -291,12 +232,35 @@ function SortableSongList({
               </span>
             )}
 
-            {/* Delete (hover) */}
+            {/* Reorder up / down — replaces drag-and-drop */}
+            <div data-noswipe className="flex items-center border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden flex-shrink-0 bg-white dark:bg-gray-800">
+              <button
+                onClick={() => move(idx, -1)}
+                disabled={isFirst}
+                title="Mută mai sus"
+                className="px-2.5 py-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-25 disabled:hover:bg-transparent transition"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M18 15l-6-6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+              <div className="w-px h-5 bg-gray-200 dark:bg-gray-600" />
+              <button
+                onClick={() => move(idx, 1)}
+                disabled={isLast}
+                title="Mută mai jos"
+                className="px-2.5 py-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-25 disabled:hover:bg-transparent transition"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+            </div>
+
+            {/* Delete — always visible (works on touch) */}
             <button
+              data-noswipe
               onClick={() => onRemoveSong(song.id)}
-              className="p-1 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 focus:opacity-100 transition flex-shrink-0"
+              title="Șterge melodia"
+              className="p-1 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition flex-shrink-0"
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                 <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
               </svg>
             </button>
@@ -346,7 +310,7 @@ function PeriodColumn({
       {/* Songs */}
       <div className="flex-1">
         {songs.length > 0
-          ? <SortableSongList songs={songs} onRemoveSong={onRemoveSong} onReorder={(items) => onReorderSongs(period, items)} onToggleSung={onToggleSung} />
+          ? <SongList songs={songs} onRemoveSong={onRemoveSong} onReorder={(items) => onReorderSongs(period, items)} onToggleSung={onToggleSung} />
           : <div className="px-4 py-5 text-center text-xs text-gray-300 dark:text-gray-600 italic">Nicio melodie planificată</div>
         }
       </div>
@@ -564,11 +528,13 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
 
   async function reorderSongs(period: "morning"|"evening", newItems: SongItem[]) {
     if (!selected) return
+    // Re-stamp positions so the optimistic re-sort (by position) keeps the new order
+    const reordered = newItems.map((s, i) => ({ ...s, position: i }))
     const others = selected.songs.filter(s => s.period !== period)
-    updateSelected({ ...selected, songs: [...others, ...newItems] })
+    updateSelected({ ...selected, songs: [...others, ...reordered] })
     await fetch(`/api/services/${selected.id}/songs/reorder`, {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: newItems.map(s => s.id) }),
+      body: JSON.stringify({ ids: reordered.map(s => s.id) }),
     })
   }
 
