@@ -376,12 +376,32 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
   const personRef = useRef<HTMLDivElement>(null)
 
   // ── Load month ──────────────────────────────────────────────────────────
+  // `cancelled` guards against a slow response from a previously-selected month
+  // overwriting the current one when the user clicks through months quickly.
   useEffect(() => {
     const key = `${year}-${String(month + 1).padStart(2, "0")}`
-    fetch(`/api/services?month=${key}`).then(r => r.json()).then((data: ServicePlan[]) => {
-      setEvents(data.sort((a, b) => a.date.localeCompare(b.date)))
-    })
+    let cancelled = false
+    fetch(`/api/services?month=${key}`)
+      .then(r => r.json())
+      .then((data: ServicePlan[]) => {
+        if (cancelled) return
+        setEvents(data.sort((a, b) => a.date.localeCompare(b.date)))
+      })
+      .catch(() => { /* keep the last-loaded month on a network error */ })
+    return () => { cancelled = true }
   }, [year, month])
+
+  // Close the create-event modal / menus with the Escape key
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return
+      setShowCreate(false)
+      setShowEditMenu(false)
+      setShowPersonSug(false)
+    }
+    document.addEventListener("keydown", onKey)
+    return () => document.removeEventListener("keydown", onKey)
+  }, [])
 
   // Sync selected with refreshed events
   useEffect(() => {
@@ -600,11 +620,11 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
         {/* Month nav + create button */}
         <div className="px-4 lg:px-5 pt-safe-header lg:pt-5 pb-2 flex items-center justify-between">
           <div className="flex items-center gap-1">
-            <button onClick={() => { if (month===0){setYear(y=>y-1);setMonth(11)}else setMonth(m=>m-1) }} className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700">
+            <button aria-label="Luna anterioară" onClick={() => { if (month===0){setYear(y=>y-1);setMonth(11)}else setMonth(m=>m-1) }} className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
             </button>
             <span className="text-sm font-bold text-gray-800 dark:text-gray-200 min-w-[110px] text-center">{RO_MONTHS[month]} {year}</span>
-            <button onClick={() => { if (month===11){setYear(y=>y+1);setMonth(0)}else setMonth(m=>m+1) }} className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700">
+            <button aria-label="Luna următoare" onClick={() => { if (month===11){setYear(y=>y+1);setMonth(0)}else setMonth(m=>m+1) }} className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
             </button>
           </div>
@@ -903,8 +923,8 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
       {/* ── Create event modal ──────────────────────────────────────────── */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setShowCreate(false)}>
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
-            <h3 className="text-base font-display font-bold text-gray-900 dark:text-gray-100 mb-4">Adaugă eveniment</h3>
+          <div role="dialog" aria-modal="true" aria-labelledby="create-event-title" className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
+            <h3 id="create-event-title" className="text-base font-display font-bold text-gray-900 dark:text-gray-100 mb-4">Adaugă eveniment</h3>
 
             {/* Type selection */}
             <div className="space-y-1.5 mb-4">

@@ -51,13 +51,21 @@ export function SongPickerClient({ allSongs, planId, period, returnDate }: Props
     if (adding) return
     setAdding(song.id)
     try {
-      await fetch(`/api/services/${planId}/songs`, {
+      const res = await fetch(`/api/services/${planId}/songs`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ songId: song.id, period, key: song.defaultKey }),
       })
-    } finally {
+      if (!res.ok) {
+        setAdding(null)
+        alert("Nu am putut adăuga melodia. Încearcă din nou.")
+        return
+      }
+      // Only navigate back on success — otherwise the song would silently not appear.
       router.push(`/planificare?date=${returnDate}`)
+    } catch {
+      setAdding(null)
+      alert("Eroare de rețea. Verifică conexiunea și încearcă din nou.")
     }
   }
 

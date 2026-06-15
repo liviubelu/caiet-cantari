@@ -60,7 +60,7 @@ function LineItem({
 
   if (!line.hasChords || !showChords) {
     return (
-      <div key={idx} className="leading-6 text-gray-900 dark:text-gray-100">
+      <div key={idx} className="leading-relaxed text-gray-900 dark:text-gray-100">
         {line.segments.map((s, j) => (
           <span key={j}>{s.text}</span>
         ))}
@@ -78,7 +78,7 @@ function LineItem({
           >
             {seg.chord ?? " "}
           </span>
-          <span className="text-gray-900 dark:text-gray-100 leading-6 whitespace-pre">
+          <span className="text-gray-900 dark:text-gray-100 leading-relaxed whitespace-pre">
             {seg.text || (seg.chord ? "​" : "")}
           </span>
         </span>

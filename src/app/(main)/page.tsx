@@ -60,6 +60,7 @@ export default async function HomePage({ searchParams }: Props) {
             {session?.user && canEditSongs(session.user.role) && (
               <Link
                 href="/adauga"
+                aria-label="Adaugă melodie"
                 className="w-8 h-8 rounded-full bg-indigo-700 flex items-center justify-center shadow-sm hover:bg-indigo-600 transition"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
@@ -93,8 +94,13 @@ export default async function HomePage({ searchParams }: Props) {
             <path d="M20 20l-3-3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
           <form>
+            <label htmlFor="song-search" className="sr-only">Caută cântări</label>
             <input
+              id="song-search"
               name="q"
+              type="search"
+              enterKeyHint="search"
+              autoComplete="off"
               defaultValue={q}
               placeholder="Caută după titlu sau prima linie…"
               className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl pl-10 pr-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition"

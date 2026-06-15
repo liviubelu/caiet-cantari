@@ -34,13 +34,36 @@ export function SongDetailClient({ content, defaultKey, songId, isFavorited, isA
     const savedCols = localStorage.getItem("songTwoColumns")
     if (savedCols !== null) setTwoColumns(savedCols === "1")
 
+    // Restore the transpose chosen for THIS song earlier in the session, and the
+    // global chords/lyrics preference — so reopening a song keeps its key.
+    const savedSemi = sessionStorage.getItem(`transpose:${songId}`)
+    if (savedSemi !== null) {
+      const n = parseInt(savedSemi)
+      if (!isNaN(n)) setSemitones(n)
+    }
+    const savedChords = localStorage.getItem("songShowChords")
+    if (savedChords !== null) setShowChords(savedChords === "1")
+
     // Track desktop breakpoint (lg = 1024px) — auto single-column on mobile
     const mq = window.matchMedia("(min-width: 1024px)")
     setIsDesktop(mq.matches)
     const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches)
     mq.addEventListener("change", handler)
     return () => mq.removeEventListener("change", handler)
-  }, [])
+  }, [songId])
+
+  function changeSemitones(n: number) {
+    setSemitones(n)
+    try { sessionStorage.setItem(`transpose:${songId}`, String(n)) } catch {}
+  }
+
+  function toggleChords() {
+    setShowChords((prev) => {
+      const next = !prev
+      try { localStorage.setItem("songShowChords", next ? "1" : "0") } catch {}
+      return next
+    })
+  }
 
   function changeFontSize(delta: number) {
     setFontSize((prev) => {
@@ -62,7 +85,7 @@ export function SongDetailClient({ content, defaultKey, songId, isFavorited, isA
     <div>
       {/* Controls bar */}
       <div className="px-4 py-3 border-t border-b border-gray-100 dark:border-gray-700 flex items-center justify-between gap-3 flex-wrap">
-        <Transposer defaultKey={defaultKey} semitones={semitones} onChange={setSemitones} />
+        <Transposer defaultKey={defaultKey} semitones={semitones} onChange={changeSemitones} />
 
         <div className="flex items-center gap-2">
           {/* Font size */}
@@ -105,7 +128,7 @@ export function SongDetailClient({ content, defaultKey, songId, isFavorited, isA
 
           {/* Chords / Lyrics toggle */}
           <button
-            onClick={() => setShowChords(!showChords)}
+            onClick={toggleChords}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
               showChords
                 ? "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400"
