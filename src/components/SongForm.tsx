@@ -3,7 +3,8 @@
 import { useState, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { ChordProDisplay } from "./ChordProDisplay"
-import { CATEGORIES } from "@/lib/categories"
+import { KeyBadge } from "./KeyBadge"
+import { CATEGORIES, getCategoryColor } from "@/lib/categories"
 import { NOTES, transposeContent, semitonesBetween } from "@/lib/transpose"
 import { getDiatonicChords, SECTIONS } from "@/lib/diatonic"
 
@@ -261,24 +262,43 @@ export function SongForm({ songId, initialValues }: Props) {
 
         </div>
 
-        {/* ── Right column — preview + buttons (desktop) ───────────────── */}
-        <div className="space-y-4 lg:sticky lg:top-24">
+        {/* ── Right column — live preview (mirrors the /song/[id] page) ──── */}
+        <div className="space-y-4 lg:sticky lg:top-6">
 
-          {/* Preview */}
-          {content.trim() ? (
-            <div>
-              <p className="text-[11px] font-semibold tracking-widest text-gray-400 dark:text-gray-500 uppercase mb-1.5">
-                Preview
-              </p>
-              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-4 max-h-[60vh] overflow-y-auto">
+          <p className="text-[11px] font-semibold tracking-widest text-gray-400 dark:text-gray-500 uppercase">
+            Previzualizare
+          </p>
+
+          {/* White card on the gray page background — same look as the real song page */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden">
+            <div className="px-5 pt-5 pb-4 border-b border-gray-50 dark:border-gray-700/50">
+              <h2 className="text-2xl font-display font-bold text-gray-900 dark:text-gray-100 leading-tight">
+                {title.trim() || <span className="text-gray-300 dark:text-gray-600">Titlul melodiei</span>}
+              </h2>
+              {(category || defaultKey) && (
+                <div className="flex items-center gap-2 flex-wrap mt-2.5">
+                  {category && (
+                    <span
+                      className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
+                      style={{ backgroundColor: getCategoryColor(category).light, color: getCategoryColor(category).color }}
+                    >
+                      {category}
+                    </span>
+                  )}
+                  {defaultKey && <KeyBadge keyName={defaultKey} />}
+                </div>
+              )}
+            </div>
+            <div className="px-5 py-4 max-h-[65vh] overflow-y-auto">
+              {content.trim() ? (
                 <ChordProDisplay content={content} />
-              </div>
+              ) : (
+                <p className="text-sm text-gray-300 dark:text-gray-600 italic text-center py-8">
+                  Conținutul apare aici pe măsură ce scrii…
+                </p>
+              )}
             </div>
-          ) : (
-            <div className="hidden lg:flex items-center justify-center h-40 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700">
-              <p className="text-sm text-gray-300 dark:text-gray-600 italic">Preview-ul apare când scrii conținut</p>
-            </div>
-          )}
+          </div>
 
           {/* Butoane — desktop only in right column */}
           <div className="hidden lg:block space-y-2">
