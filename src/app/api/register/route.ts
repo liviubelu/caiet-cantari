@@ -13,7 +13,10 @@ export async function POST(req: Request) {
 
   const [existing] = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1)
   if (existing?.emailVerified) {
-    return NextResponse.json({ error: "Există deja un cont cu acest email." }, { status: 409 })
+    // Account already exists & verified. Don't reveal this (avoids email
+    // enumeration) — return the same success shape, but skip sending a new
+    // verification email. The user should sign in or use "forgot password".
+    return NextResponse.json({ ok: true }, { status: 200 })
   }
 
   const token = randomBytes(32).toString("hex")

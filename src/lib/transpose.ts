@@ -18,9 +18,16 @@ export function transposeChord(chord: string, semitones: number): string {
   return newRoot + modifier
 }
 
+// A token inside [ ] is only transposed if it actually looks like a chord.
+// This prevents bracketed annotations such as [Bridge] (root "B" + "ridge")
+// from being mangled into [C#ridge] when transposing.
+const CHORD_RE = /^[A-G][b#]?(maj|min|m|dim|aug|sus|add|M)?\d*(\([^)]*\))?(sus|add|maj|dim|aug)?\d*([b#]\d+)*(\/[A-G][b#]?)?$/
+
 export function transposeContent(content: string, semitones: number): string {
   if (semitones === 0) return content
-  return content.replace(/\[([^\]]+)\]/g, (_, c) => `[${transposeChord(c, semitones)}]`)
+  return content.replace(/\[([^\]]+)\]/g, (whole, c) =>
+    CHORD_RE.test(c) ? `[${transposeChord(c, semitones)}]` : whole
+  )
 }
 
 export function getTransposedKey(defaultKey: string | null | undefined, semitones: number): string {

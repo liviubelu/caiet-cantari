@@ -24,7 +24,7 @@ export default function HomeLoading() {
             <div className="h-3 w-4 bg-gray-300 dark:bg-gray-700 rounded mb-2 mx-1" />
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
               {Array.from({ length: count }).map((_, i) => (
-                <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl px-4 py-3.5 border border-gray-100 dark:border-gray-700 flex items-center gap-3">
+                <div key={i} className="bg-white dark:bg-gray-800 rounded-xl px-4 py-3.5 border border-gray-100 dark:border-gray-700 flex items-center gap-3">
                   <div className="flex-1 space-y-2">
                     <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
                     <div className="h-3 bg-gray-100 dark:bg-gray-700 rounded w-1/2" />

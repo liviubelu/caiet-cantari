@@ -10,7 +10,7 @@ export default function ColectiiLoading() {
       <div className="px-4 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700">
+            <div key={i} className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-1 h-8 bg-gray-200 dark:bg-gray-700 rounded-full" />
                 <div className="flex-1 space-y-1.5">
