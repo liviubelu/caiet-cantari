@@ -1,12 +1,14 @@
 "use client"
 
-import { useState, useRef, useCallback, useEffect } from "react"
+import { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { ChordProDisplay } from "./ChordProDisplay"
 import { KeyBadge } from "./KeyBadge"
+import { OrderBar } from "./OrderBar"
 import { CATEGORIES, getCategoryColor } from "@/lib/categories"
 import { NOTES, transposeContent, semitonesBetween } from "@/lib/transpose"
 import { getDiatonicChords, SECTIONS } from "@/lib/diatonic"
+import { parseSections, parseOrder } from "@/lib/sections"
 
 interface Props {
   songId?: string
@@ -15,6 +17,7 @@ interface Props {
     content: string
     category: string
     defaultKey: string
+    singingOrder?: string | null
   }
 }
 
@@ -38,8 +41,33 @@ export function SongForm({ songId, initialValues }: Props) {
   const [defaultKey, setDefaultKey] = useState(initialValues?.defaultKey ?? "")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [order, setOrder] = useState<string[]>(parseOrder(initialValues?.singingOrder))
+  const [showPreview, setShowPreview] = useState(false)
 
   const diatonicChords = getDiatonicChords(defaultKey)
+  // Sections detected from the current content — drives the order builder.
+  const sections = useMemo(() => parseSections(content), [content])
+
+  function addSection(id: string) { setOrder((o) => [...o, id]) }
+  function removeSection(i: number) { setOrder((o) => o.filter((_, k) => k !== i)) }
+  function resetOrder() { setOrder([]) }
+  function moveSection(i: number, dir: -1 | 1) {
+    setOrder((o) => {
+      const j = i + dir
+      if (j < 0 || j >= o.length) return o
+      const next = [...o]
+      ;[next[i], next[j]] = [next[j], next[i]]
+      return next
+    })
+  }
+
+  // Close the full-screen preview with Escape
+  useEffect(() => {
+    if (!showPreview) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setShowPreview(false) }
+    document.addEventListener("keydown", onKey)
+    return () => document.removeEventListener("keydown", onKey)
+  }, [showPreview])
 
   // Auto-grow the editor so a short song leaves no tall empty box (and the page
   // doesn't scroll for it). Long songs grow up to the CSS max-height, then the
@@ -89,7 +117,7 @@ export function SongForm({ songId, initialValues }: Props) {
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, content, category, defaultKey }),
+      body: JSON.stringify({ title, content, category, defaultKey, singingOrder: order.length ? JSON.stringify(order) : null }),
     })
     setLoading(false)
     if (!res.ok) {
@@ -249,69 +277,91 @@ export function SongForm({ songId, initialValues }: Props) {
             </p>
           </div>
 
-          {/* Butoane — vizibile și pe mobile sub textarea */}
-          <div className="space-y-2 lg:hidden">
-            {error && <p className="text-sm text-red-500 dark:text-red-400">{error}</p>}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gray-900 dark:bg-indigo-700 text-white py-3.5 rounded-xl font-semibold text-sm hover:bg-gray-800 dark:hover:bg-indigo-600 transition disabled:opacity-50"
-            >
-              {loading ? "Se salvează..." : songId ? "Salvează modificările" : "Adaugă melodia"}
-            </button>
-            {songId && (
-              <button
-                type="button"
-                onClick={handleDelete}
-                className="w-full border border-red-100 dark:border-red-900 text-red-500 dark:text-red-400 py-3.5 rounded-xl font-semibold text-sm hover:bg-red-50 dark:hover:bg-red-950 transition"
-              >
-                Șterge melodia
-              </button>
+        </div>
+
+        {/* ── Right column — singing order builder + actions ──────────────── */}
+        <div className="space-y-4 lg:sticky lg:top-6">
+
+          {/* ORDER BUILDER */}
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4">
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" stroke="#6366f1" strokeWidth="2" strokeLinecap="round"/></svg>
+                <span className="text-[11px] font-bold tracking-widest uppercase text-indigo-600 dark:text-indigo-400">Ordinea de cântare</span>
+              </div>
+              {order.length > 0 && (
+                <button type="button" onClick={resetOrder} className="text-xs font-semibold text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">Resetează</button>
+              )}
+            </div>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mb-3 leading-relaxed">Atinge o secțiune ca s-o adaugi în șir. Poți repeta refrenul de câte ori e nevoie.</p>
+
+            {sections.length === 0 ? (
+              <p className="text-xs text-gray-300 dark:text-gray-600 italic">
+                Adaugă secțiuni în conținut ({"{verse}"}, {"{chorus}"}…) ca să poți construi o ordine.
+              </p>
+            ) : (
+              <>
+                <p className="text-[10px] font-bold tracking-wider uppercase text-gray-400 dark:text-gray-500 mb-2">Secțiuni disponibile</p>
+                <div className="flex flex-wrap gap-1.5 mb-4">
+                  {sections.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => addSection(s.id)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition active:scale-95"
+                      style={{ backgroundColor: `${s.color}1a`, color: s.color }}
+                    >
+                      <span className="text-sm leading-none">+</span>{s.label}
+                    </button>
+                  ))}
+                </div>
+
+                {order.length > 0 ? (
+                  <div className="flex flex-col gap-1.5">
+                    {order.map((id, i) => {
+                      const s = sections.find((x) => x.id === id)
+                      if (!s) return null
+                      return (
+                        <div key={i} className="flex items-center gap-2.5 bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700 rounded-xl px-2.5 py-2">
+                          <span className="w-5 h-5 rounded-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 text-[11px] font-bold flex items-center justify-center flex-shrink-0">{i + 1}</span>
+                          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
+                          <span className="flex-1 text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{s.label}</span>
+                          <button type="button" onClick={() => moveSection(i, -1)} disabled={i === 0} aria-label="Mută mai sus" className="w-7 h-7 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-25 transition flex items-center justify-center flex-shrink-0">↑</button>
+                          <button type="button" onClick={() => moveSection(i, 1)} disabled={i === order.length - 1} aria-label="Mută mai jos" className="w-7 h-7 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-25 transition flex items-center justify-center flex-shrink-0">↓</button>
+                          <button type="button" onClick={() => removeSection(i)} aria-label="Elimină din ordine" className="w-7 h-7 rounded-lg border border-red-200/70 dark:border-red-900 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition flex items-center justify-center flex-shrink-0">✕</button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="border border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-3.5 text-center">
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-2.5 leading-relaxed">Nicio ordine setată — melodia se cântă în ordinea naturală:</p>
+                    <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                      {sections.map((s, i) => (
+                        <span key={s.id} className="inline-flex items-center gap-1.5">
+                          {i > 0 && <span className="text-gray-300 dark:text-gray-600 text-xs">›</span>}
+                          <span className="px-2 py-0.5 rounded-md text-[11px] font-bold font-mono" style={{ backgroundColor: `${s.color}1a`, color: s.color }}>{s.abbr}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
-        </div>
+          {/* Full-screen preview button (replaces the old inline preview) */}
+          <button
+            type="button"
+            onClick={() => setShowPreview(true)}
+            className="w-full flex items-center justify-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-3 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" strokeWidth="1.7"/><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.7"/></svg>
+            Previzualizare pe tot ecranul
+          </button>
 
-        {/* ── Right column — live preview (mirrors the /song/[id] page) ──── */}
-        <div className="space-y-4 lg:sticky lg:top-6">
-
-          <p className="text-[11px] font-semibold tracking-widest text-gray-400 dark:text-gray-500 uppercase">
-            Previzualizare
-          </p>
-
-          {/* White card on the gray page background — same look as the real song page */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden">
-            <div className="px-5 pt-5 pb-4 border-b border-gray-50 dark:border-gray-700/50">
-              <h2 className="text-2xl font-display font-bold text-gray-900 dark:text-gray-100 leading-tight">
-                {title.trim() || <span className="text-gray-300 dark:text-gray-600">Titlul melodiei</span>}
-              </h2>
-              {(category || defaultKey) && (
-                <div className="flex items-center gap-2 flex-wrap mt-2.5">
-                  {category && (
-                    <span
-                      className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
-                      style={{ backgroundColor: `${getCategoryColor(category).color}1a`, color: getCategoryColor(category).color }}
-                    >
-                      {category}
-                    </span>
-                  )}
-                  {defaultKey && <KeyBadge keyName={defaultKey} />}
-                </div>
-              )}
-            </div>
-            <div className="px-5 py-4 max-h-[65vh] lg:max-h-[calc(100dvh_-_19rem)] overflow-y-auto">
-              {content.trim() ? (
-                <ChordProDisplay content={content} />
-              ) : (
-                <p className="text-sm text-gray-300 dark:text-gray-600 italic text-center py-8">
-                  Conținutul apare aici pe măsură ce scrii…
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Butoane — desktop only in right column */}
-          <div className="hidden lg:block space-y-2">
+          {/* Actions */}
+          <div className="space-y-2">
             {error && <p className="text-sm text-red-500 dark:text-red-400">{error}</p>}
             <button
               type="submit"
@@ -333,6 +383,50 @@ export function SongForm({ songId, initialValues }: Props) {
 
         </div>
       </div>
+
+      {/* ── Full-screen preview overlay — shows the song like the real page ── */}
+      {showPreview && (
+        <div role="dialog" aria-modal="true" aria-label="Previzualizare melodie" className="fixed inset-0 z-[60] bg-[#f0f2f5] dark:bg-gray-950 flex flex-col">
+          <div className="flex items-center justify-between px-4 lg:px-6 pt-safe-bar pb-3 lg:pt-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+            <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" strokeWidth="1.7"/><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.7"/></svg>
+              <span className="text-[11px] font-bold tracking-widest uppercase">Previzualizare</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowPreview(false)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+            >
+              ✕ Închide
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto px-3 lg:px-6 py-4">
+            <div className="max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden">
+              <div className="px-5 lg:px-8 pt-6 pb-4">
+                <h1 className="text-2xl font-display font-bold text-gray-900 dark:text-gray-100 leading-tight mb-2">
+                  {title.trim() || "Titlul melodiei"}
+                </h1>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {category && (
+                    <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: `${getCategoryColor(category).color}1a`, color: getCategoryColor(category).color }}>
+                      {category}
+                    </span>
+                  )}
+                  {defaultKey && <KeyBadge keyName={defaultKey} />}
+                </div>
+                <OrderBar order={order} sections={sections} className="mt-3" />
+              </div>
+              <div className="px-5 lg:px-8 pb-8 border-t border-gray-100 dark:border-gray-700 pt-5">
+                {content.trim() ? (
+                  <ChordProDisplay content={content} />
+                ) : (
+                  <p className="text-sm text-gray-300 dark:text-gray-600 italic py-6">Niciun conținut de afișat.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   )
 }

@@ -32,6 +32,7 @@ export default async function EditSongPage({ params }: Props) {
             content: song.content,
             category: song.category ?? "",
             defaultKey: song.defaultKey ?? "",
+            singingOrder: song.singingOrder ?? null,
           }}
         />
       </div>

@@ -11,6 +11,8 @@ import { getSongById } from "@/lib/queries"
 import Link from "next/link"
 import { SongDetailClient } from "./SongDetailClient"
 import { BackButton } from "./BackButton"
+import { OrderBar } from "@/components/OrderBar"
+import { parseSections, parseOrder } from "@/lib/sections"
 
 interface Props {
   params: Promise<{ id: string }>
@@ -74,6 +76,12 @@ export default async function SongPage({ params }: Props) {
                 </span>
               )}
             </div>
+            {/* Custom singing order — guide bar (hidden when none set) */}
+            <OrderBar
+              order={parseOrder(song.singingOrder)}
+              sections={parseSections(song.content)}
+              className="mt-3"
+            />
           </div>
 
           {/* Controls + lyrics — rendered by the client component.

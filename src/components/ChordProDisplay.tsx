@@ -49,6 +49,7 @@ function LineItem({
       <p
         key={idx}
         className="text-[11px] font-sans font-semibold uppercase tracking-widest text-gray-400 mt-5 mb-1 first:mt-0"
+        style={line.sectionColor ? { color: line.sectionColor } : undefined}
       >
         {line.commentText}
       </p>
@@ -58,9 +59,11 @@ function LineItem({
   const isEmpty = line.segments.every((s) => !s.chord && !s.text.trim())
   if (isEmpty) return <div key={idx} className="h-3" />
 
+  const italic = line.sectionType === "chorus"
+
   if (!line.hasChords || !showChords) {
     return (
-      <div key={idx} className="leading-relaxed text-gray-900 dark:text-gray-100">
+      <div key={idx} className={`leading-relaxed text-gray-900 dark:text-gray-100 ${italic ? "italic" : ""}`}>
         {line.segments.map((s, j) => (
           <span key={j}>{s.text}</span>
         ))}
@@ -78,7 +81,7 @@ function LineItem({
           >
             {seg.chord ?? " "}
           </span>
-          <span className="text-gray-900 dark:text-gray-100 leading-relaxed whitespace-pre">
+          <span className={`text-gray-900 dark:text-gray-100 leading-relaxed whitespace-pre ${italic ? "italic" : ""}`}>
             {seg.text || (seg.chord ? "​" : "")}
           </span>
         </span>

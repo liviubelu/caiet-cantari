@@ -30,6 +30,9 @@ export const songs = pgTable("songs", {
   createdBy: uuid("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   hasChords: boolean("has_chords").notNull().default(false),
+  // JSON array of section ids (e.g. ["verse-1","chorus-1","verse-2"]) describing
+  // the custom singing order. null/empty = natural order (sections as written).
+  singingOrder: text("singing_order"),
 })
 
 export const passwordResetTokens = pgTable("password_reset_tokens", {

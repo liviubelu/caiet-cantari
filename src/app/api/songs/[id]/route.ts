@@ -20,7 +20,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   }
 
   const { id } = await params
-  const { title, content, category, defaultKey } = await req.json()
+  const { title, content, category, defaultKey, singingOrder } = await req.json()
   if (!title || !content) {
     return NextResponse.json({ error: "Titlul și conținutul sunt obligatorii." }, { status: 400 })
   }
@@ -29,7 +29,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const hasChords = content.includes("[")
   const [song] = await db
     .update(songs)
-    .set({ title, content, firstLine, category, defaultKey, hasChords })
+    .set({ title, content, firstLine, category, defaultKey, hasChords, singingOrder: singingOrder ?? null })
     .where(eq(songs.id, id))
     .returning()
 

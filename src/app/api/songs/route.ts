@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Acces interzis." }, { status: 403 })
   }
 
-  const { title, content, category, defaultKey } = await req.json()
+  const { title, content, category, defaultKey, singingOrder } = await req.json()
   if (!title || !content) {
     return NextResponse.json({ error: "Titlul și conținutul sunt obligatorii." }, { status: 400 })
   }
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   const hasChords = content.includes("[")
   const [song] = await db
     .insert(songs)
-    .values({ title, content, firstLine, category, defaultKey, createdBy: session.user.id, hasChords })
+    .values({ title, content, firstLine, category, defaultKey, createdBy: session.user.id, hasChords, singingOrder: singingOrder ?? null })
     .returning()
 
   revalidateTag("songs", { expire: 0 })
