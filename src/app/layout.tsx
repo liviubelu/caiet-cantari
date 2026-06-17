@@ -3,6 +3,7 @@ import { Inter, Lora } from "next/font/google"
 import "./globals.css"
 import { SwRegister } from "@/components/SwRegister"
 import { Providers } from "@/components/Providers"
+import { OrientationLock } from "@/components/OrientationLock"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 const lora = Lora({ subsets: ["latin"], variable: "--font-lora" })
@@ -32,11 +33,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Capture beforeinstallprompt before React hydrates */}
         <script dangerouslySetInnerHTML={{ __html: `window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window._pwaPrompt=e;});` }} />
         <Providers>
-          {/* Counter-rotated to portrait on landscape phones (see globals.css).
-              The presentation overlay portals out to <body>, bypassing this. */}
-          <div id="rotate-root">{children}</div>
+          {children}
         </Providers>
         <SwRegister />
+        <OrientationLock />
       </body>
     </html>
   )

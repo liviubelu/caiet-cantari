@@ -14,7 +14,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
     : null
 
   return (
-    <div id="app-shell" className="h-dvh overflow-hidden bg-[#f0f2f5] dark:bg-gray-950 pl-safe pr-safe">
+    <div className="h-dvh overflow-hidden bg-[#f0f2f5] dark:bg-gray-950 pl-safe pr-safe">
       {/* Desktop sidebar — hidden on mobile */}
       <Sidebar user={user} />
 

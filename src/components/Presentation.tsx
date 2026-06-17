@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react"
-import { createPortal } from "react-dom"
 import type { PresentationSlide } from "@/lib/sections"
 
 export function PresentationButton({ title, slides }: { title: string; slides: PresentationSlide[] }) {
@@ -99,7 +98,7 @@ function PresentationOverlay({
     ? { position: "absolute", top: "50%", left: "50%", width: "100vh", height: "100vw", transform: "translate(-50%, -50%) rotate(90deg)" }
     : { position: "absolute", inset: 0, width: "100%", height: "100%" }
 
-  return createPortal(
+  return (
     <div className="fixed inset-0 z-[100] overflow-hidden select-none" style={{ background: bg, color: fg }}>
       {/* Tappable slide area — tap advances to the next slide */}
       <div style={boxStyle} className="flex flex-col px-6 py-12" onClick={next}>
@@ -158,7 +157,6 @@ function PresentationOverlay({
         </button>
         <span className="text-xs truncate max-w-[55%] text-right" style={{ color: subtle }}>{title}</span>
       </div>
-    </div>,
-    document.body
+    </div>
   )
 }
