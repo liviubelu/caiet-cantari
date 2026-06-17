@@ -93,6 +93,21 @@ function PresentationOverlay({
     }
   }, [])
 
+  // Stop iOS from even starting the edge swipe-back: preventDefault on touches
+  // that begin at the very left/right screen edge (never on the controls, so the
+  // buttons keep working). This kills the gesture before it animates.
+  useEffect(() => {
+    const onTouchStart = (e: TouchEvent) => {
+      const t = e.touches[0]
+      if (!t) return
+      if ((e.target as HTMLElement | null)?.closest("button")) return
+      const edge = 24
+      if (t.clientX <= edge || t.clientX >= window.innerWidth - edge) e.preventDefault()
+    }
+    document.addEventListener("touchstart", onTouchStart, { passive: false })
+    return () => document.removeEventListener("touchstart", onTouchStart)
+  }, [])
+
   // Auto-fit: make the lyrics as large as possible without overflowing
   useLayoutEffect(() => {
     const fit = () => {
