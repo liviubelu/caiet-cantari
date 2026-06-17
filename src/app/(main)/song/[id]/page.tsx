@@ -12,8 +12,9 @@ import Link from "next/link"
 import { SongDetailClient } from "./SongDetailClient"
 import { BackButton } from "./BackButton"
 import { OrderBar } from "@/components/OrderBar"
-import { parseSections, parseOrder } from "@/lib/sections"
+import { parseSections, parseOrder, getPresentationSlides } from "@/lib/sections"
 import { formatRoDate } from "@/lib/format"
+import { PresentationButton } from "@/components/Presentation"
 
 interface Props {
   params: Promise<{ id: string }>
@@ -54,6 +55,10 @@ export default async function SongPage({ params }: Props) {
     lastSung = row?.last ?? null
   }
 
+  // Presentation (projector) slides — only when a singing order is set.
+  const order = parseOrder(song.singingOrder)
+  const slides = getPresentationSlides(song.content, order)
+
   return (
     <div className="bg-[#f0f2f5] dark:bg-gray-950 flex-1 flex flex-col">
       {/* Sticky gray nav bar — sits above the white card */}
@@ -91,7 +96,7 @@ export default async function SongPage({ params }: Props) {
             </div>
             {/* Custom singing order — guide bar (hidden when none set) */}
             <OrderBar
-              order={parseOrder(song.singingOrder)}
+              order={order}
               sections={parseSections(song.content)}
               className="mt-3"
             />
@@ -108,6 +113,12 @@ export default async function SongPage({ params }: Props) {
                   "Încă necântată în programe"
                 )}
               </p>
+            )}
+            {/* Projector presentation — only for songs with a singing order */}
+            {slides.length > 0 && (
+              <div className="mt-4">
+                <PresentationButton title={song.title} slides={slides} />
+              </div>
             )}
           </div>
 

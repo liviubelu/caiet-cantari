@@ -128,3 +128,23 @@ export function resolveOrder(order: string[], sections: SongSection[]): SongSect
   const byId = new Map(sections.map((s) => [s.id, s]))
   return order.map((id) => byId.get(id)).filter((s): s is SongSection => !!s)
 }
+
+/** Remove chord markers like [C] / [G/B] from a line. */
+export function stripChords(line: string): string {
+  return line.replace(/\[[^\]]*\]/g, "")
+}
+
+export interface PresentationSlide { label: string; color: string; lines: string[] }
+
+/**
+ * Build the projector slides: one slide per step in the singing order
+ * (repeats included), lyrics only (chords stripped, blank lines removed).
+ */
+export function getPresentationSlides(content: string, order: string[]): PresentationSlide[] {
+  const sections = parseSections(content)
+  return resolveOrder(order, sections).map((s) => ({
+    label: s.label,
+    color: s.color,
+    lines: s.lines.map((l) => stripChords(l).trim()).filter((l) => l !== ""),
+  }))
+}
