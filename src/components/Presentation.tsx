@@ -80,6 +80,19 @@ function PresentationOverlay({
     }
   }, [])
 
+  // Block the swipe-back / browser-back gesture on touch devices — the user must
+  // exit via the ✕ button. We trap one history entry and re-push it on popstate.
+  useEffect(() => {
+    if (!window.matchMedia("(pointer: coarse)").matches) return
+    history.pushState({ prez: true }, "")
+    const onPop = () => history.pushState({ prez: true }, "")
+    window.addEventListener("popstate", onPop)
+    return () => {
+      window.removeEventListener("popstate", onPop)
+      if ((window.history.state as { prez?: boolean } | null)?.prez) history.back()
+    }
+  }, [])
+
   // Auto-fit: make the lyrics as large as possible without overflowing
   useLayoutEffect(() => {
     const fit = () => {
@@ -117,13 +130,17 @@ function PresentationOverlay({
     : { position: "absolute", inset: 0 }
 
   const chip = { background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)" }
+  // Keep content/controls clear of the notch & home-indicator on every edge
+  // (works for native landscape and for the CSS-rotated iOS case).
+  const SAFE = "max(env(safe-area-inset-top),env(safe-area-inset-bottom),env(safe-area-inset-left),env(safe-area-inset-right),16px)"
 
   return (
     <div className="fixed inset-0 z-[100] overflow-hidden select-none" style={{ background: bg, color: fg }}>
       <div style={canvasStyle} className="overflow-hidden">
+        <div style={{ position: "absolute", inset: SAFE }}>
 
         {/* Tappable slide area — tap advances to the next slide */}
-        <div className="absolute inset-0 flex flex-col px-4 py-12" onClick={next}>
+        <div className="absolute inset-0 flex flex-col px-3 py-14" onClick={next}>
           <p className="text-center text-sm font-bold tracking-widest uppercase flex-shrink-0 mb-4" style={{ color: slide.color }}>
             {slide.label}
           </p>
@@ -189,6 +206,7 @@ function PresentationOverlay({
             Înapoi
           </button>
           <span className="text-xs truncate max-w-[55%] text-right" style={{ color: subtle }}>{title}</span>
+        </div>
         </div>
       </div>
     </div>
