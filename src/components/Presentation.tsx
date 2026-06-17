@@ -113,14 +113,10 @@ function PresentationOverlay({
                   const isLast = i === slide.lines.length - 1
                   const closeText = slide.repeat >= 3 ? `:/ x${slide.repeat}` : ":/"
                   return (
-                    <div key={i}>
-                      {isFirst && slide.repeat >= 2 && (
-                        <span className="mr-2" style={{ color: slide.color }}>/:</span>
-                      )}
+                    <div key={i} className="whitespace-nowrap">
+                      {isFirst && slide.repeat >= 2 && <span className="mr-2">/:</span>}
                       {l}
-                      {isLast && slide.repeat >= 2 && (
-                        <span className="ml-2" style={{ color: slide.color }}>{closeText}</span>
-                      )}
+                      {isLast && slide.repeat >= 2 && <span className="ml-2">{closeText}</span>}
                     </div>
                   )
                 })
