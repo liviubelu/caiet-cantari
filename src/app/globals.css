@@ -77,12 +77,26 @@ body {
   font-family: var(--font-display);
 }
 
-/* ── Portrait lock for the normal app (phones) ───────────────────────────────
-   The manifest locks installed PWAs to portrait, but iOS / plain browsers
-   ignore that. This blocker covers the app when a phone is held in landscape and
-   asks the user to rotate back. The presentation overlay sits ABOVE it (higher
-   z-index), so landscape ("oblic") stays available only inside the presentation. */
-.orientation-lock { display: none; }
+/* ── Force-portrait on phones ─────────────────────────────────────────────────
+   iOS / plain browsers ignore the manifest's portrait lock. When a phone is held
+   in landscape we counter-rotate the whole app back to portrait, so the normal
+   content never appears "oblique". Portrait is completely untouched (rules only
+   apply inside the landscape media query). The presentation overlay is portaled
+   to <body> (outside #rotate-root), so it is NOT counter-rotated and can use
+   landscape freely. */
 @media (orientation: landscape) and (max-height: 600px) and (pointer: coarse) {
-  .orientation-lock { display: flex; }
+  #rotate-root {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 100dvh;
+    height: 100dvw;
+    transform: translate(-50%, -50%) rotate(90deg);
+    overflow: hidden;
+  }
+  /* The app shell uses h-dvh (the short side in landscape); make it fill the
+     rotated container's height instead. */
+  #app-shell {
+    height: 100dvw;
+  }
 }
