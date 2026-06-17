@@ -152,6 +152,12 @@ export function AccountRequests() {
               Cerere trimisă. Mulțumim!
             </p>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 leading-relaxed">Am trimis cererea administratorului.</p>
+            <button
+              onClick={() => { setSongSent(false); setTitle(""); setLink(""); setNotes(""); setSongError(""); setSongOpen(true) }}
+              className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+            >
+              <span className="text-base leading-none">+</span> Mai cere o melodie
+            </button>
           </div>
         )}
       </div>
