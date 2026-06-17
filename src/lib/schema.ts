@@ -35,6 +35,14 @@ export const songs = pgTable("songs", {
   singingOrder: text("singing_order"),
 })
 
+// Per-user cooldown timestamps for self-service requests (anti-spam).
+export const requestCooldowns = pgTable("request_cooldowns", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  instrumentistAt: timestamp("instrumentist_at"),
+})
+
 export const passwordResetTokens = pgTable("password_reset_tokens", {
   token: text("token").primaryKey(),
   email: text("email").notNull(),
