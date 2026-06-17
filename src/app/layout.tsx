@@ -3,6 +3,7 @@ import { Inter, Lora } from "next/font/google"
 import "./globals.css"
 import { SwRegister } from "@/components/SwRegister"
 import { Providers } from "@/components/Providers"
+import { OrientationLock } from "@/components/OrientationLock"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 const lora = Lora({ subsets: ["latin"], variable: "--font-lora" })
@@ -35,6 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
         </Providers>
         <SwRegister />
+        <OrientationLock />
       </body>
     </html>
   )
