@@ -41,9 +41,10 @@ function PresentationOverlay({
   const next = useCallback(() => setIndex((i) => Math.min(total - 1, i + 1)), [total])
   const prev = useCallback(() => setIndex((i) => Math.max(0, i - 1)), [])
 
-  // Rotate the slide on a portrait phone so it reads big in landscape
+  // On a portrait phone, rotate the WHOLE presentation 90° so it always reads in
+  // landscape (there is no portrait variant).
   useEffect(() => {
-    const mq = window.matchMedia("(orientation: portrait) and (max-width: 820px)")
+    const mq = window.matchMedia("(orientation: portrait) and (max-width: 820px) and (pointer: coarse)")
     const update = () => setRotate(mq.matches)
     update()
     mq.addEventListener("change", update)
@@ -61,13 +62,19 @@ function PresentationOverlay({
     return () => window.removeEventListener("keydown", onKey)
   }, [next, prev, onClose])
 
-  // Fullscreen + keep-awake (both best-effort)
+  // Fullscreen + auto-landscape + keep-awake (all best-effort).
+  // Orientation lock works on Android (in fullscreen); iOS Safari ignores it,
+  // so there we fall back to the CSS rotation above.
   useEffect(() => {
-    document.documentElement.requestFullscreen?.().catch(() => {})
+    const orient = screen.orientation as unknown as { lock?: (o: string) => Promise<void>; unlock?: () => void }
+    Promise.resolve(document.documentElement.requestFullscreen?.())
+      .then(() => orient.lock?.("landscape"))
+      .catch(() => {})
     const nav = navigator as Navigator & { wakeLock?: { request: (t: string) => Promise<{ release: () => Promise<void> }> } }
     let lock: { release: () => Promise<void> } | null = null
     nav.wakeLock?.request("screen").then((l) => { lock = l }).catch(() => {})
     return () => {
+      try { orient.unlock?.() } catch {}
       if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {})
       lock?.release().catch(() => {})
     }
@@ -102,79 +109,87 @@ function PresentationOverlay({
   const fg = dark ? "#f3f4f6" : "#111827"
   const subtle = dark ? "rgba(255,255,255,.55)" : "rgba(17,24,39,.55)"
 
-  const boxStyle: React.CSSProperties = rotate
+  // The whole presentation (slide + controls) lives inside this canvas, which is
+  // rotated as one block on a portrait phone — so the controls land in landscape
+  // too, and there's never a portrait layout.
+  const canvasStyle: React.CSSProperties = rotate
     ? { position: "absolute", top: "50%", left: "50%", width: "100vh", height: "100vw", transform: "translate(-50%, -50%) rotate(90deg)" }
-    : { position: "absolute", inset: 0, width: "100%", height: "100%" }
+    : { position: "absolute", inset: 0 }
+
+  const chip = { background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)" }
 
   return (
     <div className="fixed inset-0 z-[100] overflow-hidden select-none" style={{ background: bg, color: fg }}>
-      {/* Tappable slide area — tap advances to the next slide */}
-      <div style={boxStyle} className="flex flex-col px-4 py-12" onClick={next}>
-        <p className="text-center text-sm font-bold tracking-widest uppercase flex-shrink-0 mb-4" style={{ color: slide.color }}>
-          {slide.label}
-        </p>
-        <div ref={contentRef} className="flex-1 min-h-0 flex items-center justify-center overflow-hidden">
-          <div ref={textRef} className="shrink-0 text-center font-display font-bold leading-tight" style={{ fontSize: "140px" }}>
-            {slide.lines.length > 0
-              ? slide.lines.map((l, i) => {
-                  const isFirst = i === 0
-                  const isLast = i === slide.lines.length - 1
-                  const closeText = slide.repeat >= 3 ? `:/ x${slide.repeat}` : ":/"
-                  return (
-                    <div key={i} className="whitespace-nowrap">
-                      {isFirst && slide.repeat >= 2 && <span className="mr-2">/:</span>}
-                      {l}
-                      {isLast && slide.repeat >= 2 && <span className="ml-2">{closeText}</span>}
-                    </div>
-                  )
-                })
-              : <div style={{ color: subtle, fontStyle: "italic" }}>(instrumental)</div>}
+      <div style={canvasStyle} className="overflow-hidden">
+
+        {/* Tappable slide area — tap advances to the next slide */}
+        <div className="absolute inset-0 flex flex-col px-4 py-12" onClick={next}>
+          <p className="text-center text-sm font-bold tracking-widest uppercase flex-shrink-0 mb-4" style={{ color: slide.color }}>
+            {slide.label}
+          </p>
+          <div ref={contentRef} className="flex-1 min-h-0 flex items-center justify-center overflow-hidden">
+            <div ref={textRef} className="shrink-0 text-center font-display font-bold leading-tight" style={{ fontSize: "140px" }}>
+              {slide.lines.length > 0
+                ? slide.lines.map((l, i) => {
+                    const isFirst = i === 0
+                    const isLast = i === slide.lines.length - 1
+                    const closeText = slide.repeat >= 3 ? `:/ x${slide.repeat}` : ":/"
+                    return (
+                      <div key={i} className="whitespace-nowrap">
+                        {isFirst && slide.repeat >= 2 && <span className="mr-2">/:</span>}
+                        {l}
+                        {isLast && slide.repeat >= 2 && <span className="ml-2">{closeText}</span>}
+                      </div>
+                    )
+                  })
+                : <div style={{ color: subtle, fontStyle: "italic" }}>(instrumental)</div>}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Top bar — counter + controls (don't advance when tapped) */}
-      <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 pt-safe-bar pb-2 lg:pt-3 pointer-events-none">
-        <span className="text-xs font-semibold pointer-events-auto px-2 py-1 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)", color: subtle }}>
-          {index + 1} / {total}
-        </span>
-        <div className="flex items-center gap-2 pointer-events-auto">
-          <button
-            onClick={() => setDark((d) => !d)}
-            aria-label="Schimbă tema"
-            className="w-9 h-9 rounded-lg flex items-center justify-center"
-            style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)", color: fg }}
-          >
-            {dark ? (
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-            ) : (
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M21 12.8A9 9 0 1111.2 3 7 7 0 0021 12.8z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/></svg>
-            )}
-          </button>
-          <button
-            onClick={onClose}
-            aria-label="Închide prezentarea"
-            className="w-9 h-9 rounded-lg flex items-center justify-center"
-            style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)", color: fg }}
-          >
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/></svg>
-          </button>
+        {/* Top bar — counter + controls (don't advance when tapped) */}
+        <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 pt-3 pb-2 pointer-events-none">
+          <span className="text-xs font-semibold pointer-events-auto px-2 py-1 rounded-lg" style={{ ...chip, color: subtle }}>
+            {index + 1} / {total}
+          </span>
+          <div className="flex items-center gap-2 pointer-events-auto">
+            <button
+              onClick={() => setDark((d) => !d)}
+              aria-label="Schimbă tema"
+              className="w-9 h-9 rounded-lg flex items-center justify-center"
+              style={{ ...chip, color: fg }}
+            >
+              {dark ? (
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              ) : (
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M21 12.8A9 9 0 1111.2 3 7 7 0 0021 12.8z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/></svg>
+              )}
+            </button>
+            <button
+              onClick={onClose}
+              aria-label="Închide prezentarea"
+              className="w-9 h-9 rounded-lg flex items-center justify-center"
+              style={{ ...chip, color: fg }}
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/></svg>
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* Prev button + title (bottom) — explicit back, since tapping advances */}
-      <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-4 pb-safe pt-2 pointer-events-none">
-        <button
-          onClick={prev}
-          disabled={index === 0}
-          aria-label="Înapoi"
-          className="pointer-events-auto flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg disabled:opacity-30"
-          style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)", color: fg }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/></svg>
-          Înapoi
-        </button>
-        <span className="text-xs truncate max-w-[55%] text-right" style={{ color: subtle }}>{title}</span>
+        {/* Prev button + title (bottom) — explicit back, since tapping advances */}
+        <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-4 pb-3 pt-2 pointer-events-none">
+          <button
+            onClick={prev}
+            disabled={index === 0}
+            aria-label="Înapoi"
+            className="pointer-events-auto flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg disabled:opacity-30"
+            style={{ ...chip, color: fg }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/></svg>
+            Înapoi
+          </button>
+          <span className="text-xs truncate max-w-[55%] text-right" style={{ color: subtle }}>{title}</span>
+        </div>
       </div>
     </div>
   )
