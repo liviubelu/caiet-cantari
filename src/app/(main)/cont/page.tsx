@@ -1,9 +1,10 @@
 export const dynamic = "force-dynamic"
 
-import { auth } from "@/auth"
+import { auth, canEditSongs } from "@/auth"
 import { redirect } from "next/navigation"
 import { SignOutButton } from "./SignOutButton"
 import { DarkModeToggle } from "./DarkModeToggle"
+import { AccountRequests } from "./AccountRequests"
 import { PwaInstallButton } from "@/components/PwaInstallButton"
 import Link from "next/link"
 
@@ -50,6 +51,9 @@ export default async function ContPage() {
             </span>
           </div>
         </div>
+
+        {/* Normal users: request instrumentist access / request a song */}
+        {!canEditSongs(role) && <AccountRequests />}
 
         {role === "admin" && (
           <Link
