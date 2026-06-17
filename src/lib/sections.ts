@@ -134,17 +134,30 @@ export function stripChords(line: string): string {
   return line.replace(/\[[^\]]*\]/g, "")
 }
 
-export interface PresentationSlide { label: string; color: string; lines: string[] }
+export interface PresentationSlide { label: string; color: string; lines: string[]; repeat: number }
 
 /**
- * Build the projector slides: one slide per step in the singing order
- * (repeats included), lyrics only (chords stripped, blank lines removed).
+ * Build the projector slides, lyrics only (chords stripped, blank lines removed).
+ * Consecutive repeats of the same section are merged into ONE slide with a
+ * `repeat` count (rendered as /: … :/ ×N), instead of identical back-to-back slides.
  */
 export function getPresentationSlides(content: string, order: string[]): PresentationSlide[] {
   const sections = parseSections(content)
-  return resolveOrder(order, sections).map((s) => ({
-    label: s.label,
-    color: s.color,
-    lines: s.lines.map((l) => stripChords(l).trim()).filter((l) => l !== ""),
-  }))
+  const byId = new Map(sections.map((s) => [s.id, s]))
+  const ids = order.filter((id) => byId.has(id))
+  const slides: PresentationSlide[] = []
+  for (let i = 0; i < ids.length; ) {
+    const id = ids[i]
+    let count = 1
+    while (i + count < ids.length && ids[i + count] === id) count++
+    const s = byId.get(id)!
+    slides.push({
+      label: s.label,
+      color: s.color,
+      lines: s.lines.map((l) => stripChords(l).trim()).filter((l) => l !== ""),
+      repeat: count,
+    })
+    i += count
+  }
+  return slides
 }

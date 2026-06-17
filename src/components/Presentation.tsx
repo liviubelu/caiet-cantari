@@ -108,7 +108,22 @@ function PresentationOverlay({
         <div ref={contentRef} className="flex-1 min-h-0 flex items-center justify-center overflow-hidden">
           <div ref={textRef} className="text-center font-display font-bold leading-tight" style={{ fontSize: "140px" }}>
             {slide.lines.length > 0
-              ? slide.lines.map((l, i) => <div key={i}>{l}</div>)
+              ? slide.lines.map((l, i) => {
+                  const isFirst = i === 0
+                  const isLast = i === slide.lines.length - 1
+                  const closeText = slide.repeat >= 3 ? `:/ x${slide.repeat}` : ":/"
+                  return (
+                    <div key={i}>
+                      {isFirst && slide.repeat >= 2 && (
+                        <span className="mr-2" style={{ color: slide.color }}>/:</span>
+                      )}
+                      {l}
+                      {isLast && slide.repeat >= 2 && (
+                        <span className="ml-2" style={{ color: slide.color }}>{closeText}</span>
+                      )}
+                    </div>
+                  )
+                })
               : <div style={{ color: subtle, fontStyle: "italic" }}>(instrumental)</div>}
           </div>
         </div>

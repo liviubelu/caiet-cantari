@@ -86,3 +86,14 @@ body {
 @media (orientation: landscape) and (max-height: 600px) and (pointer: coarse) {
   .orientation-lock { display: flex; }
 }
+
+/* Prevent iOS Safari from auto-zooming when focusing a field: it only zooms when
+   the control's font is < 16px. We keep pinch-zoom available (no user-scalable
+   restriction). Touch devices only, so desktop sizing is unchanged. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
