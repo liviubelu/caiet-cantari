@@ -79,14 +79,22 @@ function PresentationOverlay({
       const area = contentRef.current
       const text = textRef.current
       if (!area || !text) return
-      text.style.fontSize = "140px"
-      const ratio = Math.min(area.clientWidth / text.scrollWidth, area.clientHeight / text.scrollHeight)
-      const size = Math.max(18, Math.min(140, 140 * ratio * 0.92))
+      let size = 220
       text.style.fontSize = `${size}px`
+      // Two passes converge on the largest size that fits BOTH width and height.
+      for (let p = 0; p < 2; p++) {
+        const ratio = Math.min(area.clientWidth / text.scrollWidth, area.clientHeight / text.scrollHeight)
+        size = Math.max(16, Math.min(220, size * ratio * 0.98))
+        text.style.fontSize = `${size}px`
+      }
     }
     fit()
     window.addEventListener("resize", fit)
-    return () => window.removeEventListener("resize", fit)
+    window.addEventListener("orientationchange", fit)
+    return () => {
+      window.removeEventListener("resize", fit)
+      window.removeEventListener("orientationchange", fit)
+    }
   }, [index, rotate])
 
   const slide = slides[index]
@@ -101,12 +109,12 @@ function PresentationOverlay({
   return (
     <div className="fixed inset-0 z-[100] overflow-hidden select-none" style={{ background: bg, color: fg }}>
       {/* Tappable slide area — tap advances to the next slide */}
-      <div style={boxStyle} className="flex flex-col px-6 py-12" onClick={next}>
+      <div style={boxStyle} className="flex flex-col px-4 py-12" onClick={next}>
         <p className="text-center text-sm font-bold tracking-widest uppercase flex-shrink-0 mb-4" style={{ color: slide.color }}>
           {slide.label}
         </p>
         <div ref={contentRef} className="flex-1 min-h-0 flex items-center justify-center overflow-hidden">
-          <div ref={textRef} className="text-center font-display font-bold leading-tight" style={{ fontSize: "140px" }}>
+          <div ref={textRef} className="shrink-0 text-center font-display font-bold leading-tight" style={{ fontSize: "140px" }}>
             {slide.lines.length > 0
               ? slide.lines.map((l, i) => {
                   const isFirst = i === 0
