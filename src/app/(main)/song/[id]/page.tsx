@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic"
 
-import { favorites } from "@/lib/schema"
-import { eq, and } from "drizzle-orm"
+import { favorites, servicePlans, servicePlanSongs } from "@/lib/schema"
+import { eq, and, max } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { notFound } from "next/navigation"
 import { getCategoryColor } from "@/lib/categories"
@@ -13,6 +13,7 @@ import { SongDetailClient } from "./SongDetailClient"
 import { BackButton } from "./BackButton"
 import { OrderBar } from "@/components/OrderBar"
 import { parseSections, parseOrder } from "@/lib/sections"
+import { formatRoDate } from "@/lib/format"
 
 interface Props {
   params: Promise<{ id: string }>
@@ -40,6 +41,18 @@ export default async function SongPage({ params }: Props) {
 
   const isFavorited = !!fav
   const cat = getCategoryColor(song.category)
+
+  // For editors: when was this song last marked as sung in a service?
+  const canEdit = !!session?.user && canEditSongs(session.user.role)
+  let lastSung: string | null = null
+  if (canEdit) {
+    const [row] = await db
+      .select({ last: max(servicePlans.date) })
+      .from(servicePlanSongs)
+      .innerJoin(servicePlans, eq(servicePlanSongs.planId, servicePlans.id))
+      .where(and(eq(servicePlanSongs.songId, id), eq(servicePlanSongs.sung, true)))
+    lastSung = row?.last ?? null
+  }
 
   return (
     <div className="bg-[#f0f2f5] dark:bg-gray-950 flex-1 flex flex-col">
@@ -82,6 +95,20 @@ export default async function SongPage({ params }: Props) {
               sections={parseSections(song.content)}
               className="mt-3"
             />
+            {/* Editors only: when was it last sung in a service? */}
+            {canEdit && (
+              <p className="mt-3 text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1.5">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" className="flex-shrink-0">
+                  <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.8"/>
+                  <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                </svg>
+                {lastSung ? (
+                  <>Cântată ultima dată: <span className="font-semibold text-gray-600 dark:text-gray-300">{formatRoDate(lastSung)}</span></>
+                ) : (
+                  "Încă necântată în programe"
+                )}
+              </p>
+            )}
           </div>
 
           {/* Controls + lyrics — rendered by the client component.

@@ -55,6 +55,30 @@ export default async function ContPage() {
         {/* Normal users: request instrumentist access / request a song */}
         {!canEditSongs(role) && <AccountRequests />}
 
+        {/* Instrumentists & admin: song statistics */}
+        {canEditSongs(role) && (
+          <Link
+            href="/statistici"
+            className="flex items-center justify-between bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-indigo-50 dark:bg-indigo-950 rounded-xl flex items-center justify-center">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-indigo-600 dark:text-indigo-400">
+                  <path d="M3 3v16a2 2 0 002 2h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                  <path d="M8 16v-4M13 16V9M18 16v-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Statistici cântări</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">Cât de des sunt cântate melodiile</p>
+              </div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-gray-300 dark:text-gray-600">
+              <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </Link>
+        )}
+
         {role === "admin" && (
           <Link
             href="/admin"

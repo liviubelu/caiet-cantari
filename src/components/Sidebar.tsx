@@ -60,6 +60,19 @@ const navItems = [
     instrumentistOnly: true,
   },
   {
+    href: "/statistici",
+    label: "Statistici",
+    icon: (active: boolean) => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <path d="M3 3v16a2 2 0 002 2h16" stroke="currentColor" strokeWidth={active ? 2.2 : 1.6} strokeLinecap="round" />
+        <rect x="7" y="11" width="3" height="6" rx="1" stroke="currentColor" strokeWidth={active ? 2.2 : 1.6} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.12 : 0} />
+        <rect x="12.5" y="7" width="3" height="10" rx="1" stroke="currentColor" strokeWidth={active ? 2.2 : 1.6} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.12 : 0} />
+        <rect x="18" y="9" width="3" height="8" rx="1" stroke="currentColor" strokeWidth={active ? 2.2 : 1.6} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.12 : 0} />
+      </svg>
+    ),
+    instrumentistOnly: true,
+  },
+  {
     href: "/cont",
     label: "Cont",
     icon: (active: boolean) => (
