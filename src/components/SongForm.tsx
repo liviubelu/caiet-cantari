@@ -126,7 +126,9 @@ export function SongForm({ songId, initialValues }: Props) {
       return
     }
     const song = await res.json()
-    router.push(`/song/${song.id}`)
+    // replace (not push) so "Înapoi" from the song page returns to where the
+    // user came from, not back into the edit/add form.
+    router.replace(`/song/${song.id}`)
     router.refresh()
   }
 

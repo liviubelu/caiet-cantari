@@ -23,8 +23,10 @@ export function SongCard({ song, favorited = false, showCategory = false, authen
   const cat = getCategoryColor(song.category)
 
   return (
-    <div className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-xl px-4 py-3.5 border border-gray-100 dark:border-gray-700 shadow-[0_1px_3px_0_rgba(0,0,0,0.04)]">
-      <Link href={`/song/${song.id}`} className="flex-1 min-w-0">
+    <div className="relative flex items-center gap-3 bg-white dark:bg-gray-800 rounded-xl px-4 py-3.5 border border-gray-100 dark:border-gray-700 shadow-[0_1px_3px_0_rgba(0,0,0,0.04)]">
+      {/* Stretched link: the whole card is the tap target (the controls below
+          sit above it via z-10 and stay independently clickable). */}
+      <Link href={`/song/${song.id}`} className="flex-1 min-w-0 before:absolute before:inset-0 before:content-['']">
         <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-tight truncate">{song.title}</p>
         {song.firstLine && (
           <p className="text-gray-400 dark:text-gray-500 text-xs mt-0.5 truncate">{song.firstLine}</p>
@@ -49,7 +51,7 @@ export function SongCard({ song, favorited = false, showCategory = false, authen
           </span>
         )}
       </Link>
-      <div className="flex items-center gap-2 flex-shrink-0">
+      <div className="relative z-10 flex items-center gap-2 flex-shrink-0">
         {song.defaultKey && <KeyBadge keyName={song.defaultKey} />}
         {authenticated ? (
           <FavoriteButton songId={song.id} initialFavorited={favorited} />
