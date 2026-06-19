@@ -25,9 +25,20 @@ export default function LoginPage() {
     setError("")
     setLoading(true)
     const res = await signIn("credentials", { email, password, redirect: false })
-    setLoading(false)
     if (res?.error) {
-      setError("Email sau parolă incorectă.")
+      // Distinguish a brute-force lockout from plain wrong credentials.
+      let msg = "Email sau parolă incorectă."
+      try {
+        const r = await fetch(`/api/auth/throttle?email=${encodeURIComponent(email)}`)
+        const data = await r.json()
+        if (data?.minutes > 0) {
+          msg = `Prea multe încercări greșite. Reîncearcă peste ~${data.minutes} min.`
+        }
+      } catch {
+        /* keep the generic message */
+      }
+      setError(msg)
+      setLoading(false)
     } else {
       // Full page navigation so the server layout picks up the fresh session
       // and BottomNav / Sidebar show the correct role immediately.
@@ -49,7 +60,7 @@ export default function LoginPage() {
           Bine ai revenit.
         </h1>
         <p className="mt-4 text-sm text-gray-500 dark:text-gray-400 italic text-center leading-relaxed px-4">
-          „{quote.text}" — {quote.ref}
+          „{quote.text}” — {quote.ref}
         </p>
       </div>
 
