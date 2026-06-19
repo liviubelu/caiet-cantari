@@ -35,6 +35,15 @@ export const songs = pgTable("songs", {
   singingOrder: text("singing_order"),
 })
 
+// Per-email login throttle (anti brute-force). Rows exist only for real,
+// verified accounts that failed a password check; cleared on success.
+export const loginAttempts = pgTable("login_attempts", {
+  email: text("email").primaryKey(),
+  fails: integer("fails").notNull().default(0),
+  lastAttempt: timestamp("last_attempt"),
+  lockedUntil: timestamp("locked_until"),
+})
+
 // Per-user cooldown timestamps for self-service requests (anti-spam).
 export const requestCooldowns = pgTable("request_cooldowns", {
   userId: uuid("user_id")
