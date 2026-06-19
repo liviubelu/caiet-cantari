@@ -403,6 +403,26 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
     return () => document.removeEventListener("keydown", onKey)
   }, [])
 
+  // Mobile: Back/swipe from an event detail returns to the calendar (deselect),
+  // instead of leaving Planificare. While a detail is open we buffer one history
+  // entry; Back consumes it (popstate → deselect). Closing via the in-app "←"
+  // button consumes the buffer too, keeping history consistent. Mobile only.
+  const detailOpen = !!selected
+  useEffect(() => {
+    if (!detailOpen) return
+    if (!window.matchMedia("(max-width: 1023px)").matches) return
+    window.history.pushState({ planDetail: true }, "")
+    const onPop = () => setSelected(null)
+    window.addEventListener("popstate", onPop)
+    return () => {
+      window.removeEventListener("popstate", onPop)
+      // Closed via the in-app button (not Back) → consume our buffer entry.
+      if ((window.history.state as { planDetail?: boolean } | null)?.planDetail) {
+        window.history.back()
+      }
+    }
+  }, [detailOpen])
+
   // Sync selected with refreshed events
   useEffect(() => {
     if (selected) {
