@@ -135,7 +135,8 @@ export function SongForm({ songId, initialValues }: Props) {
   async function handleDelete() {
     if (!songId || !confirm("Ștergi această melodie?")) return
     await fetch(`/api/songs/${songId}`, { method: "DELETE" })
-    router.push("/")
+    // replace, not push — otherwise "back" lands on the deleted song's edit/detail (404)
+    router.replace("/")
     router.refresh()
   }
 

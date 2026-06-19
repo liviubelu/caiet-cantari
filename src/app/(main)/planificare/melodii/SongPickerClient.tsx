@@ -61,8 +61,9 @@ export function SongPickerClient({ allSongs, planId, period, returnDate }: Props
         alert("Nu am putut adăuga melodia. Încearcă din nou.")
         return
       }
-      // Only navigate back on success — otherwise the song would silently not appear.
-      router.push(`/planificare?date=${returnDate}`)
+      // replace — return to planificare without leaving the picker in history
+      // (otherwise "back" from planificare would re-open the picker).
+      router.replace(`/planificare?date=${returnDate}`)
     } catch {
       setAdding(null)
       alert("Eroare de rețea. Verifică conexiunea și încearcă din nou.")

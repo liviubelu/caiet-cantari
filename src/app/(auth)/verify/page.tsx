@@ -50,7 +50,8 @@ function VerifyForm() {
       redirect: false,
     })
     setLoading(false)
-    router.push("/")
+    // replace — the verify page's token is now used; "back" shouldn't return to it
+    router.replace("/")
   }
 
   return (

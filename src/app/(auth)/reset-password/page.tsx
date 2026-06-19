@@ -56,7 +56,8 @@ function ResetForm() {
         })
       }
       setSuccess(true)
-      setTimeout(() => router.push("/"), 2000)
+      // replace — the reset token is now used; "back" shouldn't return to it
+      setTimeout(() => router.replace("/"), 2000)
     } catch {
       setError("A apărut o eroare de rețea.")
     }
