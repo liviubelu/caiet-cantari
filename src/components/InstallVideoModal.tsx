@@ -24,6 +24,13 @@ export function InstallVideoModal({ open, onClose }: { open: boolean; onClose: (
 
   if (!open) return null
 
+  // Native controls only on desktop (a bottom bar that doesn't clash with our
+  // close button). On touch — especially iOS Safari — native controls overlay
+  // the corners (mute top-right, fullscreen top-left) and collide with the ✕,
+  // so we drop them there and let the muted clip just autoplay & loop.
+  const finePointer =
+    typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches
+
   return (
     <div
       className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 backdrop-blur-sm sm:p-6"
@@ -50,7 +57,7 @@ export function InstallVideoModal({ open, onClose }: { open: boolean; onClose: (
           muted
           loop
           playsInline
-          controls
+          controls={finePointer}
           controlsList="nodownload noplaybackrate"
           disablePictureInPicture
         />
