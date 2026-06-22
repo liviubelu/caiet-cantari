@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useSyncExternalStore } from "react"
+import { InstallVideoModal } from "@/components/InstallVideoModal"
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -118,21 +119,6 @@ export function PwaInstallButton({ className = "" }: { className?: string }) {
   }, [])
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  // Lock background scroll + close on Escape while the video is open.
-  useEffect(() => {
-    if (!showVideo) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setShowVideo(false)
-    }
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = "hidden"
-    window.addEventListener("keydown", onKey)
-    return () => {
-      document.body.style.overflow = prevOverflow
-      window.removeEventListener("keydown", onKey)
-    }
-  }, [showVideo])
-
   async function handleInstall() {
     if (state === "manual") {
       setShowVideo(true)
@@ -172,42 +158,8 @@ export function PwaInstallButton({ className = "" }: { className?: string }) {
           : "Instalează aplicația"}
       </button>
 
-      {/* Install tutorial video — replaces the old text instructions. The clip
-          is 16:9, so the modal is sized 16:9 on desktop (fills edge-to-edge) and
-          full-screen on mobile (letterboxed on its dark background, like a clip). */}
-      {showVideo && (
-        <div
-          className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 backdrop-blur-sm sm:p-6"
-          onClick={() => setShowVideo(false)}
-        >
-          <div
-            className="relative bg-[#0a0a0a] w-full h-full sm:h-auto sm:w-[min(95vw,164vh)] sm:aspect-video sm:rounded-3xl overflow-hidden shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setShowVideo(false)}
-              aria-label="Închide"
-              className="absolute right-3 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-black/50 text-white backdrop-blur hover:bg-black/70 transition"
-              style={{ top: "max(0.75rem, env(safe-area-inset-top))" }}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </button>
-            <video
-              src="/instalare.mp4"
-              className="w-full h-full object-contain"
-              autoPlay
-              muted
-              loop
-              playsInline
-              controls
-              controlsList="nodownload noplaybackrate"
-              disablePictureInPicture
-            />
-          </div>
-        </div>
-      )}
+      {/* Install tutorial video — replaces the old text instructions. */}
+      <InstallVideoModal open={showVideo} onClose={() => setShowVideo(false)} />
     </>
   )
 }
