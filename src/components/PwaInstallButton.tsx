@@ -172,14 +172,16 @@ export function PwaInstallButton({ className = "" }: { className?: string }) {
           : "Instalează aplicația"}
       </button>
 
-      {/* Install animation ("video") — replaces the old text instructions. */}
+      {/* Install tutorial video — replaces the old text instructions. The clip
+          is 16:9, so the modal is sized 16:9 on desktop (fills edge-to-edge) and
+          full-screen on mobile (letterboxed on its dark background, like a clip). */}
       {showVideo && (
         <div
-          className="fixed inset-0 z-[999] flex items-center justify-center bg-black/70 backdrop-blur-sm sm:p-6"
+          className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 backdrop-blur-sm sm:p-6"
           onClick={() => setShowVideo(false)}
         >
           <div
-            className="relative bg-[#0a0a0a] w-full h-full sm:w-[min(92vw,860px)] sm:h-[min(88vh,600px)] sm:rounded-3xl overflow-hidden shadow-2xl"
+            className="relative bg-[#0a0a0a] w-full h-full sm:h-auto sm:w-[min(95vw,164vh)] sm:aspect-video sm:rounded-3xl overflow-hidden shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -192,10 +194,16 @@ export function PwaInstallButton({ className = "" }: { className?: string }) {
                 <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
               </svg>
             </button>
-            <iframe
-              src="/instalare-pwa.html"
-              title="Cum instalez aplicația"
-              className="w-full h-full border-0"
+            <video
+              src="/instalare.mp4"
+              className="w-full h-full object-contain"
+              autoPlay
+              muted
+              loop
+              playsInline
+              controls
+              controlsList="nodownload noplaybackrate"
+              disablePictureInPicture
             />
           </div>
         </div>
