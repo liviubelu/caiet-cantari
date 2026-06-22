@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useSyncExternalStore } from "react"
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>
 }
 
-type State = "loading" | "can-install" | "ios" | "installed" | "browser-help"
+type State = "loading" | "can-install" | "manual"
 
 declare global {
   interface Window {
@@ -15,100 +15,88 @@ declare global {
   }
 }
 
-function detectBrowser(): "chrome" | "edge" | "opera" | "safari" | "firefox" | "other" {
-  if (typeof navigator === "undefined") return "other"
-  const ua = navigator.userAgent
-  if (/OPR|Opera/i.test(ua)) return "opera"
-  if (/Edg\//i.test(ua)) return "edge"
-  if (/Chrome/i.test(ua)) return "chrome"
-  if (/Firefox/i.test(ua)) return "firefox"
-  if (/Safari/i.test(ua)) return "safari"
-  return "other"
+// Once the user installs (appinstalled), stay "installed" for the rest of the
+// session even in a browser tab (where display-mode never flips to standalone).
+let installedFlag = false
+
+function isStandalone(): boolean {
+  if (typeof window === "undefined") return false
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    ("standalone" in navigator && (navigator as { standalone?: boolean }).standalone === true)
+  )
 }
 
-const BROWSER_INSTRUCTIONS: Record<string, { name: string; steps: string[] }> = {
-  opera: {
-    name: "Opera / Opera GX",
-    steps: [
-      'Uită-te în bara de adresă — în dreapta apare o iconiță de instalare (monitor cu săgeată ⬇)',
-      'Click pe ea și alege "Instalează"',
-      'Dacă nu o vezi: meniu Opera (O logo, stânga sus) → "Instalează Caiet de Cântări"',
-    ],
-  },
-  edge: {
-    name: "Microsoft Edge",
-    steps: [
-      'Caută iconița de instalare (⊕) în bara de adresă, colțul din dreapta',
-      'Sau: Meniu (···) → "Aplicații" → "Instalează acest site ca aplicație"',
-      "Confirmă instalarea",
-    ],
-  },
-  chrome: {
-    name: "Google Chrome",
-    steps: [
-      'Caută iconița de instalare (⊕) în bara de adresă, colțul din dreapta',
-      'Sau: Meniu (⋮) → "Salvează și partajează" → "Instalează ca aplicație"',
-      "Confirmă instalarea",
-    ],
-  },
-  firefox: {
-    name: "Firefox",
-    steps: [
-      "Firefox nu suportă instalarea PWA ca aplicație nativă",
-      "Recomandare: folosește Chrome, Edge sau Opera GX",
-    ],
-  },
-  safari: {
-    name: "Safari (macOS)",
-    steps: [
-      'Din bara de meniu: "Dosar" (File) → "Adaugă în Dock"',
-      "Sau: butonul Share → \"Adaugă în Dock\"",
-    ],
-  },
-  other: {
-    name: "Browserul tău",
-    steps: [
-      "Caută iconița de instalare (⊕) în bara de adresă",
-      'Sau deschide meniul browserului și caută "Instalează aplicația"',
-    ],
-  },
+function subscribeInstalled(onChange: () => void) {
+  const onInstalled = () => {
+    installedFlag = true
+    onChange()
+  }
+  window.addEventListener("appinstalled", onInstalled)
+  const mq = window.matchMedia("(display-mode: standalone)")
+  mq.addEventListener?.("change", onChange)
+  return () => {
+    window.removeEventListener("appinstalled", onInstalled)
+    mq.removeEventListener?.("change", onChange)
+  }
+}
+
+/**
+ * Is the app running as an installed PWA?
+ *
+ * True when launched from the home screen / app window (standalone display
+ * mode, or iOS' `navigator.standalone`), or the moment the user installs it
+ * (`appinstalled`). Used to hide every "install" affordance once installed.
+ *
+ * Implemented with `useSyncExternalStore` so it stays correct across SSR
+ * hydration (server renders "not installed", client reconciles after mount).
+ *
+ * Note: in a regular browser tab we can't reliably tell that the app is
+ * installed elsewhere — only that *this* surface is/became standalone.
+ */
+export function usePwaInstalled(): boolean {
+  return useSyncExternalStore(
+    subscribeInstalled,
+    () => installedFlag || isStandalone(),
+    () => false,
+  )
+}
+
+function isIosDevice(): boolean {
+  if (typeof navigator === "undefined") return false
+  return (
+    /iphone|ipad|ipod/i.test(navigator.userAgent) &&
+    !(window as Window & { MSStream?: unknown }).MSStream
+  )
 }
 
 export function PwaInstallButton({ className = "" }: { className?: string }) {
+  const installed = usePwaInstalled()
   const [state, setState] = useState<State>("loading")
   const [prompt, setPrompt] = useState<BeforeInstallPromptEvent | null>(null)
-  const [showModal, setShowModal] = useState(false)
-  const [browser, setBrowser] = useState<string>("other")
+  const [showVideo, setShowVideo] = useState(false)
+  // Computed once on mount; nothing renders with it until `state` leaves
+  // "loading", so the server/client first paint (null) stays in sync.
+  const [isIos] = useState(isIosDevice)
 
+  // Platform detection must run after hydration (the server can't know the UA),
+  // so these initial setStates are deliberate — a lazy useState initializer would
+  // make the server (always "loading") and client first paint disagree.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    setBrowser(detectBrowser())
-
-    // Already running as installed PWA
-    const isStandalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      ("standalone" in navigator && (navigator as { standalone?: boolean }).standalone === true)
-    if (isStandalone) {
-      setState("installed")
+    // iOS Safari never fires beforeinstallprompt → manual (video) guide.
+    if (isIosDevice()) {
+      setState("manual")
       return
     }
 
-    // iOS Safari — no beforeinstallprompt
-    const isIos =
-      /iphone|ipad|ipod/i.test(navigator.userAgent) &&
-      !(window as Window & { MSStream?: unknown }).MSStream
-    if (isIos) {
-      setState("ios")
-      return
-    }
-
-    // Check if prompt was captured by the global script before React mounted
+    // The prompt may have been captured by the bootstrap before React mounted.
     if (window._pwaPrompt) {
       setPrompt(window._pwaPrompt)
       setState("can-install")
       return
     }
 
-    // Listen for it
     const handler = (e: Event) => {
       e.preventDefault()
       const promptEvent = e as BeforeInstallPromptEvent
@@ -118,136 +106,97 @@ export function PwaInstallButton({ className = "" }: { className?: string }) {
     }
     window.addEventListener("beforeinstallprompt", handler)
 
-    const installedHandler = () => {
-      setState("installed")
-      setPrompt(null)
-    }
-    window.addEventListener("appinstalled", installedHandler)
-
-    // After 4s without beforeinstallprompt, show browser-specific help
+    // No native prompt after 4s → fall back to the manual (video) guide.
     const timeout = setTimeout(() => {
-      setState((prev) => (prev === "loading" ? "browser-help" : prev))
+      setState((prev) => (prev === "loading" ? "manual" : prev))
     }, 4000)
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handler)
-      window.removeEventListener("appinstalled", installedHandler)
       clearTimeout(timeout)
     }
   }, [])
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  // Lock background scroll + close on Escape while the video is open.
+  useEffect(() => {
+    if (!showVideo) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowVideo(false)
+    }
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    window.addEventListener("keydown", onKey)
+    return () => {
+      document.body.style.overflow = prevOverflow
+      window.removeEventListener("keydown", onKey)
+    }
+  }, [showVideo])
 
   async function handleInstall() {
-    if (state === "ios" || state === "browser-help") {
-      setShowModal(true)
+    if (state === "manual") {
+      setShowVideo(true)
       return
     }
     if (!prompt) return
     await prompt.prompt()
-    const { outcome } = await prompt.userChoice
-    if (outcome === "accepted") setState("installed")
+    await prompt.userChoice
     setPrompt(null)
     window._pwaPrompt = undefined
   }
 
-  const info = BROWSER_INSTRUCTIONS[browser] ?? BROWSER_INSTRUCTIONS.other
-
-  if (state === "installed") {
-    return (
-      <div className={`flex items-center gap-2 text-sm text-green-600 font-medium ${className}`}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-          <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        Aplicație instalată
-      </div>
-    )
-  }
-
+  // Already installed (or just installed) → no install UI at all.
+  if (installed) return null
   if (state === "loading") return null
-
-  const isIosOrHelp = state === "ios" || state === "browser-help"
 
   return (
     <>
       <button onClick={handleInstall} className={`flex items-center gap-2 ${className}`}>
-        {isIosOrHelp ? (
-          /* Question/help icon for manual install */
+        {state === "manual" ? (
+          /* Help / play icon for the install guide */
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
             <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
-            <path d="M9.5 9.5a2.5 2.5 0 015 0c0 1.5-1.5 2-2.5 2.5V13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            <circle cx="12" cy="16.5" r="1" fill="currentColor" />
+            <path d="M10 9l5 3-5 3V9z" fill="currentColor" />
           </svg>
         ) : (
-          /* Download icon */
+          /* Download icon for the native install prompt */
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
             <path d="M12 15V3M8 7l4-4 4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M5 15v4a1 1 0 001 1h12a1 1 0 001-1v-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
         )}
-        {state === "ios"
-          ? "Instalează pe iPhone/iPad"
-          : state === "browser-help"
-          ? "Cum instalez?"
+        {state === "manual"
+          ? isIos
+            ? "Cum instalez pe iPhone/iPad"
+            : "Cum instalez aplicația"
           : "Instalează aplicația"}
       </button>
 
-      {/* Instructions modal (iOS + browser-help) */}
-      {showModal && (
+      {/* Install animation ("video") — replaces the old text instructions. */}
+      {showVideo && (
         <div
-          className="fixed inset-0 z-[999] flex items-end justify-center bg-black/50 backdrop-blur-sm"
-          onClick={() => setShowModal(false)}
+          className="fixed inset-0 z-[999] flex items-center justify-center bg-black/70 backdrop-blur-sm sm:p-6"
+          onClick={() => setShowVideo(false)}
         >
           <div
-            className="bg-white rounded-t-3xl p-6 w-full max-w-sm"
-            style={{ paddingBottom: "max(24px, env(safe-area-inset-bottom))" }}
+            className="relative bg-[#0a0a0a] w-full h-full sm:w-[min(92vw,860px)] sm:h-[min(88vh,600px)] sm:rounded-3xl overflow-hidden shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-12 h-12 bg-indigo-700 rounded-2xl flex items-center justify-center flex-shrink-0">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 2v20" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-                  <path d="M7 8h10" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-                </svg>
-              </div>
-              <div>
-                <p className="font-bold text-gray-900">Caiet de Cântări</p>
-                <p className="text-xs text-gray-400">
-                  {state === "ios" ? "iPhone / iPad" : info.name}
-                </p>
-              </div>
-            </div>
-
-            <p className="text-sm font-semibold text-gray-700 mb-4">
-              {state === "ios" ? "Adaugă pe ecranul principal:" : "Instalează aplicația:"}
-            </p>
-
-            <div className="space-y-4">
-              {(state === "ios"
-                ? [
-                    "Apasă butonul Share din bara de jos a Safari",
-                    'Derulează și apasă "Adaugă pe ecranul principal"',
-                    'Apasă "Adaugă" în colțul din dreapta sus',
-                  ]
-                : info.steps
-              ).map((step, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <span className="w-7 h-7 bg-indigo-50 text-indigo-700 rounded-full text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
-                    {i + 1}
-                  </span>
-                  <p
-                    className="text-sm text-gray-700"
-                    dangerouslySetInnerHTML={{ __html: step }}
-                  />
-                </div>
-              ))}
-            </div>
-
             <button
-              onClick={() => setShowModal(false)}
-              className="mt-6 w-full bg-indigo-700 text-white py-3 rounded-2xl font-semibold text-sm hover:bg-indigo-600 transition"
+              onClick={() => setShowVideo(false)}
+              aria-label="Închide"
+              className="absolute right-3 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-black/50 text-white backdrop-blur hover:bg-black/70 transition"
+              style={{ top: "max(0.75rem, env(safe-area-inset-top))" }}
             >
-              Am înțeles
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
             </button>
+            <iframe
+              src="/instalare-pwa.html"
+              title="Cum instalez aplicația"
+              className="w-full h-full border-0"
+            />
           </div>
         </div>
       )}

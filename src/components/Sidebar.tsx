@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { ChurchIcon } from "@/components/ChurchIcon"
-import { PwaInstallButton } from "@/components/PwaInstallButton"
+import { PwaInstallButton, usePwaInstalled } from "@/components/PwaInstallButton"
 
 export type SidebarUser = {
   name?: string | null
@@ -90,6 +90,7 @@ export function Sidebar({ user }: { user: SidebarUser | null }) {
   // immediately without a full page reload.
   const { data: session } = useSession()
   const liveRole = (session?.user as { role?: string } | undefined)?.role ?? user?.role
+  const installed = usePwaInstalled()
 
   const initials = user?.name
     ? user.name.split(" ").map((w: string) => w[0]).slice(0, 2).join("").toUpperCase()
@@ -168,10 +169,12 @@ export function Sidebar({ user }: { user: SidebarUser | null }) {
         )}
       </nav>
 
-      {/* Install button */}
-      <div className="px-4 pb-3">
-        <PwaInstallButton className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-dashed border-gray-200 dark:border-gray-600 text-xs font-semibold text-gray-500 dark:text-gray-400 hover:border-indigo-300 hover:text-indigo-600 transition" />
-      </div>
+      {/* Install button — hidden once the app is installed */}
+      {!installed && (
+        <div className="px-4 pb-3">
+          <PwaInstallButton className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-dashed border-gray-200 dark:border-gray-600 text-xs font-semibold text-gray-500 dark:text-gray-400 hover:border-indigo-300 hover:text-indigo-600 transition" />
+        </div>
+      )}
 
       {/* User section */}
       <div className="px-3 py-4 border-t border-gray-100 dark:border-gray-700">

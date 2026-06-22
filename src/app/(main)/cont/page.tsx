@@ -5,7 +5,7 @@ import { redirect } from "next/navigation"
 import { SignOutButton } from "./SignOutButton"
 import { DarkModeToggle } from "./DarkModeToggle"
 import { AccountRequests } from "./AccountRequests"
-import { PwaInstallButton } from "@/components/PwaInstallButton"
+import { InstallCard } from "./InstallCard"
 import Link from "next/link"
 
 const ROLE_LABELS: Record<string, string> = {
@@ -106,16 +106,8 @@ export default async function ContPage() {
           <DarkModeToggle />
         </div>
 
-        {/* PWA Install */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
-          <div className="px-4 py-4 flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Instalează aplicația</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Acces rapid de pe ecranul principal</p>
-            </div>
-            <PwaInstallButton className="bg-indigo-700 text-white text-xs font-semibold px-3 py-2 rounded-xl hover:bg-indigo-600 transition" />
-          </div>
-        </div>
+        {/* PWA Install — hidden once the app is installed */}
+        <InstallCard />
 
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
           <div className="px-4 py-3.5 border-b border-gray-50 dark:border-gray-700">
