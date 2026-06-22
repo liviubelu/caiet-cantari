@@ -7,6 +7,7 @@ import { favorites } from "@/lib/schema"
 import { eq } from "drizzle-orm"
 import { getCachedSongs } from "@/lib/queries"
 import { SongCard } from "@/components/SongCard"
+import { InstallBanner } from "@/components/InstallBanner"
 import Link from "next/link"
 import { ChurchIcon } from "@/components/ChurchIcon"
 
@@ -110,6 +111,9 @@ export default async function HomePage({ searchParams }: Props) {
       </div>
 
       <div className="px-4 lg:px-8 py-2">
+        {/* Install promo for new visitors — hides itself once installed/dismissed */}
+        <InstallBanner />
+
         {allSongs.length === 0 && (
           <div className="text-center py-16 text-gray-400 dark:text-gray-500">
             <p className="text-sm">
