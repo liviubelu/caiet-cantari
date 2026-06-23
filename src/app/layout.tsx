@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   title: "Caiet de Cântări — Tineri Bartolomeu",
   description: "Caiet de cântări — Tineri Bartolomeu",
   icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
     apple: "/api/pwa-icon?size=180",
   },
 }

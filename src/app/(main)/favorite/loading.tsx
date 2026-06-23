@@ -18,16 +18,6 @@ export default function FavoriteLoading() {
           <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full" />
           <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-4/5" />
         </div>
-
-        {/* Stats */}
-        <div className="flex gap-4 mb-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="flex-1 bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-100 dark:border-gray-700 space-y-2">
-              <div className="h-5 w-6 bg-gray-200 dark:bg-gray-700 rounded mx-auto" />
-              <div className="h-2.5 bg-gray-100 dark:bg-gray-700 rounded w-3/4 mx-auto" />
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Song cards */}
