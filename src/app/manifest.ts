@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Caiet de Cântări",
     short_name: "Cântări",
-    description: "Melodiile tinerilor de la Biserica Bartolomeu",
+    description: "Caiet de cântări — Tineri Bartolomeu",
     start_url: "/",
     display: "standalone",
     background_color: "#f0f2f5",

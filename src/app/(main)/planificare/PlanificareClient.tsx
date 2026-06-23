@@ -25,7 +25,7 @@ type SongOption = {
 // ── Event config ──────────────────────────────────────────────────────────────
 
 const EVENT_CFG: Record<EventType, { label: string; color: string; dot: string; bg: string; dark: string }> = {
-  slujba:        { label: "Slujbă",        color: "#6366f1", dot: "bg-indigo-500",  bg: "bg-indigo-50 dark:bg-indigo-950",   dark: "text-indigo-700 dark:text-indigo-300" },
+  slujba:        { label: "Program de duminică", color: "#6366f1", dot: "bg-indigo-500",  bg: "bg-indigo-50 dark:bg-indigo-950",   dark: "text-indigo-700 dark:text-indigo-300" },
   nunta:         { label: "Nuntă",          color: "#f43f5e", dot: "bg-rose-500",    bg: "bg-rose-50 dark:bg-rose-950",       dark: "text-rose-700 dark:text-rose-300"   },
   binecuvantare: { label: "Binecuvântare",  color: "#a855f7", dot: "bg-purple-500",  bg: "bg-purple-50 dark:bg-purple-950",   dark: "text-purple-700 dark:text-purple-300" },
   priveghi:      { label: "Priveghi",       color: "#10b981", dot: "bg-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-950", dark: "text-emerald-700 dark:text-emerald-300" },
@@ -511,7 +511,7 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
   async function createEvent() {
     if (!newDate || creating) return
     if (newType === "slujba" && getDayOfWeek(newDate) !== 0) {
-      alert("Slujba duminicală poate fi adăugată doar duminica.")
+      alert("Programul de duminică poate fi adăugat doar duminica.")
       return
     }
     setCreating(true)
@@ -865,7 +865,7 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
               <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
                 <span>👥</span>
-                <span className="text-sm font-bold text-gray-900 dark:text-gray-100">Echipă</span>
+                <span className="text-sm font-bold text-gray-900 dark:text-gray-100">Instrumentiști</span>
                 {people.length > 0 && <span className="text-xs text-gray-400 dark:text-gray-500">{people.length} persoane</span>}
               </div>
               {people.length > 0 && (

@@ -115,8 +115,8 @@ export default async function ContPage() {
             <p className="text-sm text-gray-700 dark:text-gray-300">{process.env.NEXT_PUBLIC_APP_VERSION ?? "—"}</p>
           </div>
           <div className="px-4 py-3.5">
-            <p className="text-xs text-gray-400 dark:text-gray-500">Biserica</p>
-            <p className="text-sm text-gray-700 dark:text-gray-300">Bartolomeu</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">Comunitate</p>
+            <p className="text-sm text-gray-700 dark:text-gray-300">Tineri Bartolomeu</p>
           </div>
         </div>
 

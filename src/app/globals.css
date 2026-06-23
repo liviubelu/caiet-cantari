@@ -21,6 +21,13 @@ html {
   overscroll-behavior: none;
 }
 
+/* When running as an installed PWA, hide every install affordance from the very
+   first paint (the .pwa-standalone class is set by an inline script in <head>),
+   so the install banner never flashes before the JS check removes it. */
+.pwa-standalone [data-hide-in-pwa] {
+  display: none !important;
+}
+
 body {
   background-color: #f0f2f5;
   color: #111827;

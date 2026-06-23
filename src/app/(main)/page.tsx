@@ -52,7 +52,7 @@ export default async function HomePage({ searchParams }: Props) {
             </div>
             <div>
               <p className="text-[9px] font-semibold tracking-widest text-gray-400 dark:text-gray-500 uppercase leading-none">
-                Biserica
+                Tineri
               </p>
               <p className="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight">Bartolomeu</p>
             </div>

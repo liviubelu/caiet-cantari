@@ -39,9 +39,6 @@ export default async function FavoritePage() {
     (a, b) => categoryOrder.indexOf(a) - categoryOrder.indexOf(b)
   )
 
-  const uniqueKeys = new Set(favSongs.map((s) => s.defaultKey).filter(Boolean))
-  const uniqueCategories = new Set(favSongs.map((s) => s.category).filter(Boolean))
-
   const initials = session.user.name
     ? session.user.name.split(" ").map((w: string) => w[0]).slice(0, 2).join("").toUpperCase()
     : "?"
@@ -57,7 +54,7 @@ export default async function FavoritePage() {
             </div>
             <div>
               <p className="text-[9px] font-semibold tracking-widest text-gray-400 dark:text-gray-500 uppercase leading-none">
-                Cartea ta de cântări
+                Caietul tău de cântări
               </p>
               <p className="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight">Cântările mele</p>
             </div>
@@ -70,21 +67,8 @@ export default async function FavoritePage() {
         <h1 className="hidden lg:block text-[28px] font-display font-bold text-gray-900 dark:text-gray-100 leading-tight mb-4">Favorite</h1>
 
         <p className="text-sm text-gray-500 dark:text-gray-400 italic leading-relaxed border-l-2 border-blue-400 dark:border-blue-600 pl-3 py-1 mb-4">
-          „Voi cânta Domnului cât voi trăi, voi lăuda pe Dumnezeul meu cât voi fi." — Psalm 104:33
+          „Voi cânta Domnului cât voi trăi, voi lăuda pe Dumnezeul meu cât voi fi.” — Psalm 104:33
         </p>
-
-        <div className="flex gap-4 mb-4">
-          {[
-            { label: "CÂNTĂRI", value: favSongs.length },
-            { label: "COLECȚII", value: uniqueCategories.size },
-            { label: "TONALITĂȚI", value: uniqueKeys.size },
-          ].map((stat) => (
-            <div key={stat.label} className="flex-1 bg-white dark:bg-gray-800 rounded-xl p-3 text-center border border-gray-100 dark:border-gray-700">
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stat.value}</p>
-              <p className="text-[10px] font-semibold tracking-widest text-gray-400 dark:text-gray-500 uppercase">{stat.label}</p>
-            </div>
-          ))}
-        </div>
       </div>
 
       <div className="px-4 lg:px-8">

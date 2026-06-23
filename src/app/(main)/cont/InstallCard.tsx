@@ -13,7 +13,7 @@ export function InstallCard() {
   if (installed) return null
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+    <div data-hide-in-pwa className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
       <div className="px-4 py-4 flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Instalează aplicația</p>

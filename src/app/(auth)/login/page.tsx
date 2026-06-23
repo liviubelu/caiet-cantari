@@ -54,10 +54,10 @@ export default function LoginPage() {
           <ChurchIcon size={22} />
         </div>
         <p className="text-[11px] font-semibold tracking-widest text-gray-400 dark:text-gray-500 uppercase mb-1">
-          Biserica Bartolomeu
+          Tineri Bartolomeu
         </p>
         <h1 className="text-3xl font-display font-bold text-gray-900 dark:text-gray-100 text-center">
-          Bine ai revenit.
+          Bine ai venit!
         </h1>
         <p className="mt-4 text-sm text-gray-500 dark:text-gray-400 italic text-center leading-relaxed px-4">
           „{quote.text}” — {quote.ref}

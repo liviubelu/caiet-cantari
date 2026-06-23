@@ -27,7 +27,7 @@ export async function sendVerificationEmail(email: string, token: string) {
             <span style="color:white;font-size:20px;font-weight:bold">✝</span>
           </div>
           <h1 style="margin:16px 0 4px;font-size:22px;color:#111827">Caiet de Cântări</h1>
-          <p style="margin:0;color:#6b7280;font-size:13px">Biserica Bartolomeu</p>
+          <p style="margin:0;color:#6b7280;font-size:13px">Tineri Bartolomeu</p>
         </div>
 
         <h2 style="font-size:18px;color:#111827;margin-bottom:8px">Bun venit!</h2>
@@ -68,7 +68,7 @@ export async function sendPasswordResetEmail(email: string, token: string) {
             <span style="color:white;font-size:20px;font-weight:bold">✝</span>
           </div>
           <h1 style="margin:16px 0 4px;font-size:22px;color:#111827">Caiet de Cântări</h1>
-          <p style="margin:0;color:#6b7280;font-size:13px">Biserica Bartolomeu</p>
+          <p style="margin:0;color:#6b7280;font-size:13px">Tineri Bartolomeu</p>
         </div>
 
         <h2 style="font-size:18px;color:#111827;margin-bottom:8px">Resetare parolă</h2>
@@ -105,7 +105,7 @@ function adminShell(heading: string, bodyHtml: string): string {
           <span style="color:white;font-size:20px;font-weight:bold">✝</span>
         </div>
         <h1 style="margin:16px 0 4px;font-size:22px;color:#111827">Caiet de Cântări</h1>
-        <p style="margin:0;color:#6b7280;font-size:13px">Biserica Bartolomeu</p>
+        <p style="margin:0;color:#6b7280;font-size:13px">Tineri Bartolomeu</p>
       </div>
       <h2 style="font-size:18px;color:#111827;margin-bottom:14px">${heading}</h2>
       ${bodyHtml}

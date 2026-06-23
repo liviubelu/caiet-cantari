@@ -9,8 +9,8 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 const lora = Lora({ subsets: ["latin"], variable: "--font-lora" })
 
 export const metadata: Metadata = {
-  title: "Caiet de Cântări — Biserica Bartolomeu",
-  description: "Baza de date cu melodiile tinerilor de la Biserica Bartolomeu",
+  title: "Caiet de Cântări — Tineri Bartolomeu",
+  description: "Caiet de cântări — Tineri Bartolomeu",
   icons: {
     apple: "/api/pwa-icon?size=180",
   },
@@ -32,6 +32,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('theme');if(t==='dark'){document.documentElement.classList.add('dark');var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content','#030712');}})()` }} />
         {/* Capture beforeinstallprompt before React hydrates */}
         <script dangerouslySetInnerHTML={{ __html: `window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window._pwaPrompt=e;});` }} />
+        {/* Flag installed/standalone before first paint so install UI ([data-hide-in-pwa])
+            is hidden by CSS immediately — avoids the banner flashing in the PWA. */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{if(window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true){document.documentElement.classList.add('pwa-standalone')}}catch(e){}})()` }} />
         <Providers>
           {children}
         </Providers>

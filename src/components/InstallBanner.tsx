@@ -20,7 +20,10 @@ export function InstallBanner() {
 
   return (
     <>
-      <div className="relative mb-4 rounded-2xl border border-indigo-100 dark:border-indigo-900 bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-950 dark:to-gray-900">
+      <div
+        data-hide-in-pwa
+        className="relative mb-4 rounded-2xl border border-indigo-100 dark:border-indigo-900 bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-950 dark:to-gray-900"
+      >
         {/* The whole card opens the tutorial video */}
         <button
           onClick={() => setShowVideo(true)}

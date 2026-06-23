@@ -64,10 +64,10 @@ export default function RegisterPage() {
           Cont Nou
         </p>
         <h1 className="text-3xl font-display font-bold text-gray-900 dark:text-gray-100 text-center">
-          Biserica Bartolomeu.
+          Tineri Bartolomeu.
         </h1>
         <p className="mt-4 text-sm text-gray-500 dark:text-gray-400 italic text-center leading-relaxed px-4">
-          „Lăudați pe Domnul, chemați Numele Lui." — Psalm 105:1
+          „Lăudați pe Domnul, chemați Numele Lui.” — Psalm 105:1
         </p>
       </div>
 
