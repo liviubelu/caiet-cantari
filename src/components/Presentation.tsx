@@ -41,6 +41,10 @@ function PresentationOverlay({
   const next = useCallback(() => setIndex((i) => Math.min(total - 1, i + 1)), [total])
   const prev = useCallback(() => setIndex((i) => Math.max(0, i - 1)), [])
 
+  const bg = dark ? "#0b0d11" : "#ffffff"
+  const fg = dark ? "#f3f4f6" : "#111827"
+  const subtle = dark ? "rgba(255,255,255,.55)" : "rgba(17,24,39,.55)"
+
   // On a portrait phone, rotate the WHOLE presentation 90° so it always reads in
   // landscape (there is no portrait variant).
   useEffect(() => {
@@ -50,6 +54,27 @@ function PresentationOverlay({
     mq.addEventListener("change", update)
     return () => mq.removeEventListener("change", update)
   }, [])
+
+  // Match the page chrome (the notch / status-bar safe area behind this fixed
+  // overlay) to the presentation background, so it never shows a different tint —
+  // including on iOS, where the overlay isn't painted under the notch until a
+  // reflow. Runs before paint and follows the dark/light toggle.
+  useLayoutEffect(() => {
+    const html = document.documentElement
+    const body = document.body
+    const meta = document.querySelector('meta[name="theme-color"]')
+    const prevHtml = html.style.background
+    const prevBody = body.style.background
+    const prevTheme = meta?.getAttribute("content") ?? null
+    html.style.background = bg
+    body.style.background = bg
+    meta?.setAttribute("content", bg)
+    return () => {
+      html.style.background = prevHtml
+      body.style.background = prevBody
+      if (meta && prevTheme != null) meta.setAttribute("content", prevTheme)
+    }
+  }, [bg])
 
   // Keyboard navigation
   useEffect(() => {
@@ -133,9 +158,6 @@ function PresentationOverlay({
   }, [index, rotate])
 
   const slide = slides[index]
-  const bg = dark ? "#0b0d11" : "#ffffff"
-  const fg = dark ? "#f3f4f6" : "#111827"
-  const subtle = dark ? "rgba(255,255,255,.55)" : "rgba(17,24,39,.55)"
 
   // The whole presentation (slide + controls) lives inside this canvas, which is
   // rotated as one block on a portrait phone — so the controls land in landscape
