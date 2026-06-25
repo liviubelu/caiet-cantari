@@ -76,7 +76,7 @@ export const favorites = pgTable("favorites", {
 export const servicePlans = pgTable("service_plans", {
   id: uuid("id").primaryKey().defaultRandom(),
   date: text("date").notNull(), // "YYYY-MM-DD" — no longer unique (multiple events/day)
-  eventType: text("event_type").notNull().default("slujba"), // slujba|nunta|binecuvantare|priveghi|inmormantare
+  eventType: text("event_type").notNull().default("slujba"), // slujba|repetitie|nunta|binecuvantare|priveghi|inmormantare
   notesMorning: text("notes_morning").default(""),
   notesEvening: text("notes_evening").default(""),
   createdAt: timestamp("created_at").defaultNow(),

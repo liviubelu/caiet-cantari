@@ -4,7 +4,7 @@ import { auth, canEditSongs } from "@/auth"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import { servicePlans, servicePlanSongs, songs } from "@/lib/schema"
-import { and, eq, gte } from "drizzle-orm"
+import { and, eq, gte, ne } from "drizzle-orm"
 import { StatisticiClient, type StatWindow } from "./StatisticiClient"
 
 /** Date string (YYYY-MM-DD) for `n` months before today. */
@@ -55,7 +55,12 @@ export default async function StatisticiPage() {
     .from(servicePlanSongs)
     .innerJoin(servicePlans, eq(servicePlanSongs.planId, servicePlans.id))
     .innerJoin(songs, eq(servicePlanSongs.songId, songs.id))
-    .where(and(eq(servicePlanSongs.sung, true), gte(servicePlans.date, threshold12)))
+    // Rehearsals ("repetitie") don't count toward how often a song is sung.
+    .where(and(
+      eq(servicePlanSongs.sung, true),
+      gte(servicePlans.date, threshold12),
+      ne(servicePlans.eventType, "repetitie"),
+    ))
 
   const windows = [
     { key: "1", label: "Ultima lună", ...aggregate(rows, monthsAgo(1)) },

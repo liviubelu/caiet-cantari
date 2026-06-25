@@ -5,7 +5,7 @@ import Link from "next/link"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export type EventType = "slujba" | "nunta" | "binecuvantare" | "priveghi" | "inmormantare"
+export type EventType = "slujba" | "repetitie" | "nunta" | "binecuvantare" | "priveghi" | "inmormantare"
 
 type SongItem = {
   id: string; songId: string; period: "morning" | "evening"
@@ -26,6 +26,7 @@ type SongOption = {
 
 const EVENT_CFG: Record<EventType, { label: string; color: string; dot: string; bg: string; dark: string }> = {
   slujba:        { label: "Program de duminică", color: "#6366f1", dot: "bg-indigo-500",  bg: "bg-indigo-50 dark:bg-indigo-950",   dark: "text-indigo-700 dark:text-indigo-300" },
+  repetitie:     { label: "Repetiție",      color: "#0891b2", dot: "bg-cyan-500",    bg: "bg-cyan-50 dark:bg-cyan-950",       dark: "text-cyan-700 dark:text-cyan-300"   },
   nunta:         { label: "Nuntă",          color: "#f43f5e", dot: "bg-rose-500",    bg: "bg-rose-50 dark:bg-rose-950",       dark: "text-rose-700 dark:text-rose-300"   },
   binecuvantare: { label: "Binecuvântare",  color: "#a855f7", dot: "bg-purple-500",  bg: "bg-purple-50 dark:bg-purple-950",   dark: "text-purple-700 dark:text-purple-300" },
   priveghi:      { label: "Priveghi",       color: "#10b981", dot: "bg-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-950", dark: "text-emerald-700 dark:text-emerald-300" },
@@ -759,12 +760,8 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
               <button onClick={() => setSelected(null)} className="lg:hidden p-1 -ml-1 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
               </button>
-              {/* Type badge */}
-              <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${selectedCfg.bg} ${selectedCfg.dark}`}>
-                {selectedCfg.label}
-              </span>
-              <div className="flex-1 min-w-0">
-                <h2 className="text-base font-display font-bold text-gray-900 dark:text-gray-100 leading-tight">
+              <div className="flex-1 min-w-0 text-center">
+                <h2 className="text-base font-display font-bold text-gray-900 dark:text-gray-100 leading-tight truncate">
                   {selectedCfg.label}
                 </h2>
                 <p className="text-xs text-gray-400 dark:text-gray-500">{formatDate(selected.date)}</p>
@@ -954,7 +951,6 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
                 >
                   <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${cfg.dot}`}/>
                   <span className={`text-sm font-semibold ${newType === key ? "text-indigo-700 dark:text-indigo-300" : "text-gray-700 dark:text-gray-200"}`}>{cfg.label}</span>
-                  {key === "slujba" && <span className="ml-auto text-[10px] text-gray-400 dark:text-gray-500">Doar duminica</span>}
                 </button>
               ))}
             </div>
