@@ -31,7 +31,8 @@ function PresentationOverlay({
   onClose: () => void
 }) {
   const [index, setIndex] = useState(0)
-  const [dark, setDark] = useState(true)
+  // Follow the app's theme (the `dark` class on <html>) — no separate toggle.
+  const [dark] = useState(() => document.documentElement.classList.contains("dark"))
   const [rotate, setRotate] = useState(false)
 
   const contentRef = useRef<HTMLDivElement>(null)
@@ -41,11 +42,11 @@ function PresentationOverlay({
   const next = useCallback(() => setIndex((i) => Math.min(total - 1, i + 1)), [total])
   const prev = useCallback(() => setIndex((i) => Math.max(0, i - 1)), [])
 
-  // Dark bg matches the app's dark theme-color (#030712) exactly, so on an iOS
-  // standalone PWA the notch / status-bar strip — which keeps the launch
-  // theme-color until a reflow — is the same color as the presentation, with no
-  // visible seam before any rotation.
-  const bg = dark ? "#030712" : "#ffffff"
+  // Backgrounds match the app's theme-color exactly (dark #030712 / light
+  // #f0f2f5), so on an iOS standalone PWA the notch / status-bar strip — which
+  // keeps the launch theme-color until a reflow — is the same color as the
+  // presentation, with no visible seam before any rotation.
+  const bg = dark ? "#030712" : "#f0f2f5"
   const fg = dark ? "#f3f4f6" : "#111827"
   const subtle = dark ? "rgba(255,255,255,.55)" : "rgba(17,24,39,.55)"
 
@@ -217,18 +218,6 @@ function PresentationOverlay({
             {index + 1} / {total}
           </span>
           <div className="flex items-center gap-2 pointer-events-auto">
-            <button
-              onClick={() => setDark((d) => !d)}
-              aria-label="Schimbă tema"
-              className="w-9 h-9 rounded-lg flex items-center justify-center"
-              style={{ ...chip, color: fg }}
-            >
-              {dark ? (
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-              ) : (
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M21 12.8A9 9 0 1111.2 3 7 7 0 0021 12.8z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/></svg>
-              )}
-            </button>
             <button
               onClick={onClose}
               aria-label="Închide prezentarea"
