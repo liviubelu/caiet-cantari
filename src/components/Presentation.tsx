@@ -172,7 +172,13 @@ function PresentationOverlay({
   const SAFE = "max(env(safe-area-inset-top),env(safe-area-inset-bottom),env(safe-area-inset-left),env(safe-area-inset-right),16px)"
 
   return (
-    <div className="fixed inset-0 z-[100] overflow-hidden select-none" style={{ background: bg, color: fg }}>
+    // translateZ(0) promotes this to its own compositing layer so iOS paints the
+    // background edge-to-edge — including under the notch — from the first frame
+    // (otherwise it only fills the safe area after a reflow, e.g. a rotation).
+    <div
+      className="fixed inset-0 z-[100] overflow-hidden select-none"
+      style={{ background: bg, color: fg, transform: "translateZ(0)", minHeight: "100dvh" }}
+    >
       <div style={canvasStyle} className="overflow-hidden">
         <div style={{ position: "absolute", inset: SAFE }}>
 
