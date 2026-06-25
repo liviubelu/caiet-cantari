@@ -41,7 +41,11 @@ function PresentationOverlay({
   const next = useCallback(() => setIndex((i) => Math.min(total - 1, i + 1)), [total])
   const prev = useCallback(() => setIndex((i) => Math.max(0, i - 1)), [])
 
-  const bg = dark ? "#0b0d11" : "#ffffff"
+  // Dark bg matches the app's dark theme-color (#030712) exactly, so on an iOS
+  // standalone PWA the notch / status-bar strip — which keeps the launch
+  // theme-color until a reflow — is the same color as the presentation, with no
+  // visible seam before any rotation.
+  const bg = dark ? "#030712" : "#ffffff"
   const fg = dark ? "#f3f4f6" : "#111827"
   const subtle = dark ? "rgba(255,255,255,.55)" : "rgba(17,24,39,.55)"
 
