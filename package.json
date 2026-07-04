@@ -1,6 +1,6 @@
 {
   "name": "caiet-cantari",
-  "version": "1.2.70",
+  "version": "1.2.71",
   "private": true,
   "scripts": {
     "dev": "next dev",
