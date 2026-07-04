@@ -15,6 +15,7 @@ import { OrderBar } from "@/components/OrderBar"
 import { parseSections, parseOrder, getPresentationSlides } from "@/lib/sections"
 import { formatRoDate } from "@/lib/format"
 import { PresentationButton } from "@/components/Presentation"
+import { PdfExportButton } from "@/components/PdfExportButton"
 
 interface Props {
   params: Promise<{ id: string }>
@@ -114,12 +115,11 @@ export default async function SongPage({ params }: Props) {
                 )}
               </p>
             )}
-            {/* Projector presentation — only for songs with a singing order */}
-            {slides.length > 0 && (
-              <div className="mt-4">
-                <PresentationButton title={song.title} slides={slides} />
-              </div>
-            )}
+            {/* Projector presentation (only with a singing order) + PDF export */}
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              {slides.length > 0 && <PresentationButton title={song.title} slides={slides} />}
+              <PdfExportButton title={song.title} content={song.content} />
+            </div>
           </div>
 
           {/* Controls + lyrics — rendered by the client component.
