@@ -881,10 +881,8 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
                 </div>
               </>
             ) : (
-              /* Non-Sunday events: a single list of songs (notes below; team follows) */
-              <div className="lg:max-w-2xl">
-                <PeriodColumn title="Melodii" emoji="🎵" songs={allList} period="morning" planId={selected.id} serviceDate={selected.date} notes={notesMorning} notesField="notesMorning" onRemoveSong={removeSong} onReorderSongs={(_p, items) => reorderMerged(items)} onToggleSung={toggleSung} onNoteChange={handleNoteChange}/>
-              </div>
+              /* Non-Sunday events: a single full-width list of songs (notes below; team follows) */
+              <PeriodColumn title="Melodii" emoji="🎵" songs={allList} period="morning" planId={selected.id} serviceDate={selected.date} notes={notesMorning} notesField="notesMorning" onRemoveSong={removeSong} onReorderSongs={(_p, items) => reorderMerged(items)} onToggleSung={toggleSung} onNoteChange={handleNoteChange}/>
             )}
 
             {/* Team */}

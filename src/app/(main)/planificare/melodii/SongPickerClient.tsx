@@ -4,6 +4,7 @@ import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { getCategoryColor } from "@/lib/categories"
+import { matchesSearch } from "@/lib/search"
 
 type Song = {
   id: string
@@ -38,13 +39,8 @@ export function SongPickerClient({ allSongs, planId, period, returnDate }: Props
   const [adding, setAdding] = useState<string | null>(null)
 
   const filtered = useMemo(() => {
-    const q = query.toLowerCase().trim()
-    if (!q) return allSongs
-    return allSongs.filter(
-      (s) =>
-        s.title.toLowerCase().includes(q) ||
-        (s.firstLine?.toLowerCase().includes(q) ?? false)
-    )
+    if (!query.trim()) return allSongs
+    return allSongs.filter((s) => matchesSearch(query, s.title, s.firstLine))
   }, [allSongs, query])
 
   async function addSong(song: Song) {
@@ -175,7 +171,7 @@ export function SongPickerClient({ allSongs, planId, period, returnDate }: Props
         ))}
         {filtered.length === 0 && (
           <div className="text-center py-16">
-            <p className="text-sm text-gray-400 dark:text-gray-500">Nicio melodie găsită pentru „{query}"</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">Nicio melodie găsită pentru „{query}”</p>
           </div>
         )}
       </div>
