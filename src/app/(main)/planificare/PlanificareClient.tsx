@@ -350,7 +350,10 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
   const [month, setMonth] = useState(now.getMonth())
   const [events, setEvents] = useState<ServicePlan[]>([])
   const [selected, setSelected] = useState<ServicePlan | null>(null)
-  const [activeTab, setActiveTab] = useState<"morning"|"evening">("morning")
+  // Remembered across a song round-trip (e.g. iOS back) via sessionStorage.
+  const [activeTab, setActiveTab] = useState<"morning"|"evening">(() =>
+    typeof window !== "undefined" && sessionStorage.getItem("planActiveTab") === "evening" ? "evening" : "morning"
+  )
   const [restoredId, setRestoredId]   = useState<string | null>(null)
   const [isRestoring, setIsRestoring] = useState(false)
 
@@ -579,6 +582,18 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
     })
   }
 
+  // Reorder for the single-list (non-Sunday) view: restamp positions across all
+  // songs regardless of period.
+  async function reorderMerged(newItems: SongItem[]) {
+    if (!selected) return
+    const reordered = newItems.map((s, i) => ({ ...s, position: i }))
+    updateSelected({ ...selected, songs: reordered })
+    await fetch(`/api/services/${selected.id}/songs/reorder`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: reordered.map(s => s.id) }),
+    })
+  }
+
   async function toggleSung(itemId: string, sung: boolean) {
     if (!selected) return
     updateSelected({ ...selected, songs: selected.songs.map(s => s.id === itemId ? { ...s, sung } : s) })
@@ -622,6 +637,11 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
   const mornings = selected ? [...selected.songs.filter(s => s.period === "morning")].sort((a,b) => a.position - b.position) : []
   const evenings = selected ? [...selected.songs.filter(s => s.period === "evening")].sort((a,b) => a.position - b.position) : []
   const people   = selected ? [...selected.people].sort((a,b) => a.position - b.position) : []
+
+  // Only "Program de duminică" (slujba) is split into Dimineață/Seară. Every other
+  // event type is a single list of songs (+ notes + instrumentiști).
+  const isSunday = selected?.eventType === "slujba"
+  const allList  = selected ? [...selected.songs].sort((a,b) => a.position - b.position) : []
   const personSuggestions = personInput.trim()
     ? userNames.filter(n => n.toLowerCase().includes(personInput.toLowerCase())).slice(0, 5)
     : userNames.slice(0, 5)
@@ -830,33 +850,42 @@ export function PlanificareClient({ allSongs, userNames }: Props) {
           {/* Content area */}
           <div className="flex-1 lg:overflow-y-auto px-4 lg:px-6 py-4 space-y-4 pb-24 lg:pb-6">
 
-            {/* Mobile tabs */}
-            <div className="flex lg:hidden gap-2 mb-2">
-              {(["morning","evening"] as const).map(tab => {
-                const cnt = tab === "morning" ? mornings.length : evenings.length
-                return (
-                  <button key={tab} onClick={() => setActiveTab(tab)}
-                    className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all ${activeTab === tab ? "bg-indigo-600 text-white shadow-sm" : "bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600"}`}
-                  >
-                    {tab === "morning" ? "☀️" : "🌙"} {tab === "morning" ? "Dimineață" : "Seară"} {cnt > 0 && <span className="ml-1 opacity-70">{cnt}</span>}
-                  </button>
-                )
-              })}
-            </div>
+            {isSunday ? (
+              <>
+                {/* Mobile tabs */}
+                <div className="flex lg:hidden gap-2 mb-2">
+                  {(["morning","evening"] as const).map(tab => {
+                    const cnt = tab === "morning" ? mornings.length : evenings.length
+                    return (
+                      <button key={tab} onClick={() => { setActiveTab(tab); try { sessionStorage.setItem("planActiveTab", tab) } catch {} }}
+                        className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all ${activeTab === tab ? "bg-indigo-600 text-white shadow-sm" : "bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600"}`}
+                      >
+                        {tab === "morning" ? "☀️" : "🌙"} {tab === "morning" ? "Dimineață" : "Seară"} {cnt > 0 && <span className="ml-1 opacity-70">{cnt}</span>}
+                      </button>
+                    )
+                  })}
+                </div>
 
-            {/* Desktop: two columns */}
-            <div className="hidden lg:grid lg:grid-cols-2 gap-4">
-              <PeriodColumn title="Dimineață" emoji="☀️" songs={mornings} period="morning" planId={selected.id} serviceDate={selected.date} notes={notesMorning} notesField="notesMorning" onRemoveSong={removeSong} onReorderSongs={reorderSongs} onToggleSung={toggleSung} onNoteChange={handleNoteChange}/>
-              <PeriodColumn title="Seară" emoji="🌙" songs={evenings} period="evening" planId={selected.id} serviceDate={selected.date} notes={notesEvening} notesField="notesEvening" onRemoveSong={removeSong} onReorderSongs={reorderSongs} onToggleSung={toggleSung} onNoteChange={handleNoteChange}/>
-            </div>
+                {/* Desktop: two columns */}
+                <div className="hidden lg:grid lg:grid-cols-2 gap-4">
+                  <PeriodColumn title="Dimineață" emoji="☀️" songs={mornings} period="morning" planId={selected.id} serviceDate={selected.date} notes={notesMorning} notesField="notesMorning" onRemoveSong={removeSong} onReorderSongs={reorderSongs} onToggleSung={toggleSung} onNoteChange={handleNoteChange}/>
+                  <PeriodColumn title="Seară" emoji="🌙" songs={evenings} period="evening" planId={selected.id} serviceDate={selected.date} notes={notesEvening} notesField="notesEvening" onRemoveSong={removeSong} onReorderSongs={reorderSongs} onToggleSung={toggleSung} onNoteChange={handleNoteChange}/>
+                </div>
 
-            {/* Mobile: single column with tabs */}
-            <div className="lg:hidden">
-              {activeTab === "morning"
-                ? <PeriodColumn title="Dimineață" emoji="☀️" songs={mornings} period="morning" planId={selected.id} serviceDate={selected.date} notes={notesMorning} notesField="notesMorning" onRemoveSong={removeSong} onReorderSongs={reorderSongs} onToggleSung={toggleSung} onNoteChange={handleNoteChange}/>
-                : <PeriodColumn title="Seară" emoji="🌙" songs={evenings} period="evening" planId={selected.id} serviceDate={selected.date} notes={notesEvening} notesField="notesEvening" onRemoveSong={removeSong} onReorderSongs={reorderSongs} onToggleSung={toggleSung} onNoteChange={handleNoteChange}/>
-              }
-            </div>
+                {/* Mobile: single column with tabs */}
+                <div className="lg:hidden">
+                  {activeTab === "morning"
+                    ? <PeriodColumn title="Dimineață" emoji="☀️" songs={mornings} period="morning" planId={selected.id} serviceDate={selected.date} notes={notesMorning} notesField="notesMorning" onRemoveSong={removeSong} onReorderSongs={reorderSongs} onToggleSung={toggleSung} onNoteChange={handleNoteChange}/>
+                    : <PeriodColumn title="Seară" emoji="🌙" songs={evenings} period="evening" planId={selected.id} serviceDate={selected.date} notes={notesEvening} notesField="notesEvening" onRemoveSong={removeSong} onReorderSongs={reorderSongs} onToggleSung={toggleSung} onNoteChange={handleNoteChange}/>
+                  }
+                </div>
+              </>
+            ) : (
+              /* Non-Sunday events: a single list of songs (notes below; team follows) */
+              <div className="lg:max-w-2xl">
+                <PeriodColumn title="Melodii" emoji="🎵" songs={allList} period="morning" planId={selected.id} serviceDate={selected.date} notes={notesMorning} notesField="notesMorning" onRemoveSong={removeSong} onReorderSongs={(_p, items) => reorderMerged(items)} onToggleSung={toggleSung} onNoteChange={handleNoteChange}/>
+              </div>
+            )}
 
             {/* Team */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
