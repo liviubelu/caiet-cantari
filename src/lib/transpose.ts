@@ -6,16 +6,22 @@ function noteIndex(note: string): number {
   return i >= 0 ? i : FLATS.indexOf(note)
 }
 
+function transposeNote(note: string, semitones: number): string {
+  const idx = noteIndex(note)
+  if (idx < 0) return note
+  const newIdx = ((idx + semitones) % 12 + 12) % 12
+  return semitones > 0 ? SHARPS[newIdx] : FLATS[newIdx]
+}
+
 export function transposeChord(chord: string, semitones: number): string {
   if (semitones === 0) return chord
   const match = chord.match(/^([A-G][b#]?)(.*)$/)
   if (!match) return chord
   const [, root, modifier] = match
-  const idx = noteIndex(root)
-  if (idx < 0) return chord
-  const newIdx = ((idx + semitones) % 12 + 12) % 12
-  const newRoot = semitones > 0 ? SHARPS[newIdx] : FLATS[newIdx]
-  return newRoot + modifier
+  if (noteIndex(root) < 0) return chord
+  // Transpose the slash-bass note too (D/F# +2 → E/G#, not E/F#).
+  const newModifier = modifier.replace(/\/([A-G][b#]?)$/, (_, bass) => "/" + transposeNote(bass, semitones))
+  return transposeNote(root, semitones) + newModifier
 }
 
 // A token inside [ ] is only transposed if it actually looks like a chord.
