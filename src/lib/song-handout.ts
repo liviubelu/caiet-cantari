@@ -121,12 +121,20 @@ function drawLine(page: PDFPage, line: ParsedLine, x: number, baselineY: number,
   return baselineY - fs * CHORD_LH - fs * LYRIC_LH
 }
 
+function hexToRgb(hex: string) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex)
+  if (!m) return SECTION_GRAY
+  const n = parseInt(m[1], 16)
+  return rgb(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255)
+}
+
 export async function generateHandoutPdf(opts: {
   title: string
   content: string
   defaultKey?: string | null
+  order?: { abbr: string; color: string }[]
 }): Promise<Uint8Array> {
-  const { title, content, defaultKey } = opts
+  const { title, content, defaultKey, order } = opts
   const lines = parseChordPro(content)
 
   const doc = await PDFDocument.create()
@@ -141,13 +149,43 @@ export async function generateHandoutPdf(opts: {
   const titleSize = 17
   const titleY = PAGE.h - MARGIN - titleSize
   page.drawText(title, { x: MARGIN, y: titleY, size: titleSize, font: bold, color: INK })
+  let titleBlockW = bold.widthOfTextAtSize(title, titleSize)
   if (defaultKey) {
-    const bx = MARGIN + bold.widthOfTextAtSize(title, titleSize) + 8
+    const bx = MARGIN + titleBlockW + 8
     const bw = bold.widthOfTextAtSize(defaultKey, 11) + 12
     page.drawRectangle({ x: bx, y: titleY - 3, width: bw, height: 18, borderColor: SECTION_GRAY, borderWidth: 0.8, color: BADGE_BG })
     page.drawText(defaultKey, { x: bx + 6, y: titleY + 2, size: 11, font: bold, color: INK })
+    titleBlockW += 8 + bw
   }
-  const ruleY = titleY - 12
+
+  // Singing order badges (S1 Ref S2 …) top-right; consecutive repeats → ×N.
+  // If they'd collide with the title, they drop to their own line below it.
+  let headerDrop = 0
+  if (order && order.length > 0) {
+    const merged: { abbr: string; color: string; n: number }[] = []
+    for (const o of order) {
+      const last = merged[merged.length - 1]
+      if (last && last.abbr === o.abbr) last.n++
+      else merged.push({ ...o, n: 1 })
+    }
+    const fsB = 9
+    const gap = 9
+    const parts = merged.map((m) => ({ text: m.n > 1 ? `${m.abbr} ×${m.n}` : m.abbr, color: hexToRgb(m.color) }))
+    const widths = parts.map((p) => bold.widthOfTextAtSize(p.text, fsB))
+    const totalW = widths.reduce((a, b) => a + b, 0) + gap * (parts.length - 1)
+    let by = titleY + 4
+    if (MARGIN + titleBlockW + 16 + totalW > PAGE.w - MARGIN) {
+      by = titleY - 14
+      headerDrop = 14
+    }
+    let bx = PAGE.w - MARGIN - totalW
+    parts.forEach((p, i) => {
+      page.drawText(p.text, { x: bx, y: by, size: fsB, font: bold, color: p.color })
+      bx += widths[i] + gap
+    })
+  }
+
+  const ruleY = titleY - 12 - headerDrop
   page.drawLine({ start: { x: MARGIN, y: ruleY }, end: { x: PAGE.w - MARGIN, y: ruleY }, thickness: 0.7, color: RULE })
 
   const bodyTop = ruleY - 14
