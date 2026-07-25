@@ -4,14 +4,11 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { ChurchIcon } from "@/components/ChurchIcon"
+import { canEditSongs, canPlan, canManageUsers, roleLabel } from "@/lib/roles"
 
 export type SidebarUser = {
   name?: string | null
   role?: string | null
-}
-
-function canEdit(role?: string | null) {
-  return role === "admin" || role === "instrumentist"
 }
 
 const navItems = [
@@ -112,7 +109,7 @@ export function Sidebar({ user }: { user: SidebarUser | null }) {
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {navItems
-          .filter((item) => !("instrumentistOnly" in item) || canEdit(liveRole))
+          .filter((item) => !("instrumentistOnly" in item) || canPlan(liveRole))
           .map((item) => {
             const active = pathname === item.href
             return (
@@ -133,7 +130,7 @@ export function Sidebar({ user }: { user: SidebarUser | null }) {
 
         <div className="h-px bg-gray-100 dark:bg-gray-700 my-2" />
 
-        {canEdit(liveRole) && (
+        {canEditSongs(liveRole) && (
           <Link
             href="/adauga"
             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
@@ -150,7 +147,7 @@ export function Sidebar({ user }: { user: SidebarUser | null }) {
           </Link>
         )}
 
-        {user?.role === "admin" && (
+        {canManageUsers(liveRole) && (
           <Link
             href="/admin"
             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
@@ -179,8 +176,8 @@ export function Sidebar({ user }: { user: SidebarUser | null }) {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate leading-tight">{user.name ?? "Cont"}</p>
-              <p className="text-[11px] text-gray-400 dark:text-gray-500 capitalize leading-tight mt-0.5">
-                {user.role === "admin" ? "Administrator" : user.role === "instrumentist" ? "Instrumentist" : "Utilizator"}
+              <p className="text-[11px] text-gray-400 dark:text-gray-500 leading-tight mt-0.5">
+                {roleLabel(liveRole ?? user.role)}
               </p>
             </div>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-gray-300 group-hover:text-gray-500 flex-shrink-0">

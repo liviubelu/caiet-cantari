@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { auth, canEditSongs } from "@/auth"
+import { auth, canPlan } from "@/auth"
 import { db } from "@/lib/db"
 import { servicePlanPeople } from "@/lib/schema"
 import { eq } from "drizzle-orm"
@@ -11,7 +11,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; personId: string }> }
 ) {
   const session = await auth()
-  if (!session?.user || !canEditSongs(session.user.role)) {
+  if (!session?.user || !canPlan(session.user.role)) {
     return NextResponse.json({ error: "Acces interzis." }, { status: 403 })
   }
 

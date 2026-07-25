@@ -6,10 +6,27 @@ import { users, loginAttempts } from "@/lib/schema"
 import { eq } from "drizzle-orm"
 
 export const ADMIN_EMAIL = "liviu_belu@yahoo.com"
+export const MASTER_EMAIL = ADMIN_EMAIL
 
-export function canEditSongs(role: string | undefined | null) {
-  return role === "admin" || role === "instrumentist"
+// The master account is identified purely by email — it can never be downgraded
+// and is the only account allowed to promote/demote admins. Its stored role is
+// "admin", so the role-based helpers already grant it every admin capability.
+export function isMaster(email: string | null | undefined): boolean {
+  return !!email && email.trim().toLowerCase() === MASTER_EMAIL.toLowerCase()
 }
+
+// Re-export the client/server-safe role helpers so existing server imports
+// (`import { canEditSongs } from "@/auth"`) keep working unchanged.
+export {
+  canEditSongs,
+  canPlan,
+  canPostAnnouncements,
+  canManageUsers,
+  roleLabel,
+  ROLE_LABELS,
+  ASSIGNABLE_ROLES,
+} from "@/lib/roles"
+export type { UserRole } from "@/lib/roles"
 
 // ── Login brute-force throttle ──────────────────────────────────────────────
 // Per email: after MAX_FAILS wrong passwords within WINDOW, lock for LOCK_MS.

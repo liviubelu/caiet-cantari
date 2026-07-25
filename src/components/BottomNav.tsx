@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useSession } from "next-auth/react"
+import { canPlan } from "@/lib/roles"
 
 const baseTabs = [
   {
@@ -72,8 +73,7 @@ export function BottomNav({ role: propRole }: Props) {
   // sign-in / role change without needing a full page reload.
   const { data: session } = useSession()
   const role    = (session?.user as { role?: string } | undefined)?.role ?? propRole
-  const canPlan = role === "instrumentist" || role === "admin"
-  const tabs = canPlan
+  const tabs = canPlan(role)
     ? [baseTabs[0], baseTabs[1], planificareTab, baseTabs[2], baseTabs[3]]
     : baseTabs
 

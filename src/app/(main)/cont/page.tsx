@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic"
 
-import { auth, canEditSongs } from "@/auth"
+import { auth, canPlan, canManageUsers, isMaster } from "@/auth"
+import { roleLabel, roleBadgeClass, MASTER_LABEL, MASTER_BADGE_CLASS } from "@/lib/roles"
 import { redirect } from "next/navigation"
 import { SignOutButton } from "./SignOutButton"
 import { DarkModeToggle } from "./DarkModeToggle"
@@ -8,18 +9,13 @@ import { AccountRequests } from "./AccountRequests"
 import { InstallCard } from "./InstallCard"
 import Link from "next/link"
 
-const ROLE_LABELS: Record<string, string> = {
-  admin:         "Administrator",
-  instrumentist: "Instrumentist",
-  user:          "Utilizator",
-}
-
 export default async function ContPage() {
   const session = await auth()
   if (!session?.user?.id) redirect("/login")
 
   const user = session.user
   const role = user.role ?? "user"
+  const master = isMaster(user.email)
   const initials = user.name
     ? user.name.split(" ").map((w: string) => w[0]).slice(0, 2).join("").toUpperCase()
     : "?"
@@ -43,20 +39,18 @@ export default async function ContPage() {
             <p className="font-semibold text-gray-900 dark:text-gray-100">{user.name}</p>
             <p className="text-sm text-gray-400 dark:text-gray-500 truncate">{user.email}</p>
             <span className={`inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-              role === "admin"         ? "bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400" :
-              role === "instrumentist" ? "bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400" :
-                                         "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
+              master ? MASTER_BADGE_CLASS : roleBadgeClass(role)
             }`}>
-              {ROLE_LABELS[role] ?? role}
+              {master ? MASTER_LABEL : roleLabel(role)}
             </span>
           </div>
         </div>
 
-        {/* Normal users: request instrumentist access / request a song */}
-        {!canEditSongs(role) && <AccountRequests />}
+        {/* Normal users (no planning access): request instrumentist access / a song */}
+        {!canPlan(role) && <AccountRequests />}
 
-        {/* Instrumentists & admin: song statistics */}
-        {canEditSongs(role) && (
+        {/* Anyone with planning access: song statistics */}
+        {canPlan(role) && (
           <Link
             href="/statistici"
             className="flex items-center justify-between bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
@@ -79,7 +73,7 @@ export default async function ContPage() {
           </Link>
         )}
 
-        {role === "admin" && (
+        {canManageUsers(role) && (
           <Link
             href="/admin"
             className="flex items-center justify-between bg-indigo-50 dark:bg-indigo-950 border border-indigo-100 dark:border-indigo-800 rounded-2xl px-4 py-3.5 hover:bg-indigo-100 dark:hover:bg-indigo-900 transition"

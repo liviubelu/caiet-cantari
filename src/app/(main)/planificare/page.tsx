@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic"
 
-import { auth, canEditSongs } from "@/auth"
+import { auth, canPlan } from "@/auth"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import { users } from "@/lib/schema"
@@ -9,7 +9,7 @@ import { PlanificareClient } from "./PlanificareClient"
 
 export default async function PlanificarePage() {
   const session = await auth()
-  if (!session?.user || !canEditSongs(session.user.role)) redirect("/")
+  if (!session?.user || !canPlan(session.user.role)) redirect("/")
 
   const [allSongs, allUsers] = await Promise.all([
     getCachedSongs(""),

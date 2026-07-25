@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic"
 
-import { auth, canEditSongs } from "@/auth"
+import { auth, canPlan } from "@/auth"
 import { redirect } from "next/navigation"
 import { getCachedSongs } from "@/lib/queries"
 import { SongPickerClient } from "./SongPickerClient"
@@ -11,7 +11,7 @@ interface Props {
 
 export default async function MelodiiPickerPage({ searchParams }: Props) {
   const session = await auth()
-  if (!session?.user || !canEditSongs(session.user.role)) redirect("/")
+  if (!session?.user || !canPlan(session.user.role)) redirect("/")
 
   const { planId, period, returnDate } = await searchParams
   if (!planId || !period) redirect("/planificare")

@@ -1,6 +1,6 @@
 import { pgTable, text, timestamp, uuid, unique, boolean, integer } from "drizzle-orm/pg-core"
 
-export type UserRole = "admin" | "instrumentist" | "user"
+export type { UserRole } from "@/lib/roles"
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),

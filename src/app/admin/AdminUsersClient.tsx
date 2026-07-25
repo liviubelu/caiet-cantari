@@ -1,6 +1,13 @@
 "use client"
 
 import { useState } from "react"
+import {
+  ASSIGNABLE_ROLES,
+  roleLabel,
+  roleBadgeClass,
+  MASTER_LABEL,
+  MASTER_BADGE_CLASS,
+} from "@/lib/roles"
 
 type User = {
   id: string
@@ -10,19 +17,20 @@ type User = {
   role: string
   emailVerified: Date | null
   createdAt: Date | null
-}
-
-const ROLE_LABELS: Record<string, { label: string; light: string; dark: string }> = {
-  admin:        { label: "Admin",         light: "bg-indigo-100 text-indigo-700", dark: "dark:bg-indigo-950 dark:text-indigo-400" },
-  instrumentist:{ label: "Instrumentist", light: "bg-amber-100 text-amber-700",   dark: "dark:bg-amber-950 dark:text-amber-400" },
-  user:         { label: "Utilizator",    light: "bg-gray-100 text-gray-600",     dark: "dark:bg-gray-700 dark:text-gray-300" },
+  isMaster?: boolean
 }
 
 const EMPTY_FORM = { email: "", firstName: "", lastName: "", password: "", role: "user" }
 
 const INPUT = "w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition"
 
-export function AdminUsersClient({ initialUsers }: { initialUsers: User[] }) {
+export function AdminUsersClient({
+  initialUsers,
+  currentIsMaster,
+}: {
+  initialUsers: User[]
+  currentIsMaster: boolean
+}) {
   const [userList, setUserList] = useState(initialUsers)
   const [loading, setLoading] = useState<string | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
@@ -30,6 +38,9 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: User[] }) {
   const [formError, setFormError] = useState("")
   const [formLoading, setFormLoading] = useState(false)
   const [showPass, setShowPass] = useState(false)
+
+  // Admins can assign every role except "admin"; only the master may grant admin.
+  const roleOptions = ASSIGNABLE_ROLES.filter((r) => r !== "admin" || currentIsMaster)
 
   async function changeRole(userId: string, role: string) {
     setLoading(userId)
@@ -42,6 +53,9 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: User[] }) {
     if (res.ok) {
       const updated = await res.json()
       setUserList((prev) => prev.map((u) => (u.id === userId ? { ...u, role: updated.role } : u)))
+    } else {
+      const err = await res.json().catch(() => ({}))
+      alert(err.error ?? "Nu s-a putut schimba rolul.")
     }
   }
 
@@ -68,6 +82,7 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: User[] }) {
 
   const verified = userList.filter((u) => u.emailVerified)
   const pending = userList.filter((u) => !u.emailVerified)
+  const instrumCount = userList.filter((u) => u.role === "instrumentist" || u.role === "instrumentist_plus").length
 
   return (
     <div className="space-y-6">
@@ -76,7 +91,7 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: User[] }) {
         {[
           { label: "Total",      value: userList.length },
           { label: "Verificați", value: verified.length },
-          { label: "Instrum.",   value: userList.filter((u) => u.role === "instrumentist").length },
+          { label: "Instrum.",   value: instrumCount },
         ].map((s) => (
           <div key={s.label} className="bg-white dark:bg-gray-800 rounded-xl p-4 text-center border border-gray-100 dark:border-gray-700">
             <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{s.value}</p>
@@ -144,8 +159,9 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: User[] }) {
             onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
             className={INPUT}
           >
-            <option value="user">Utilizator</option>
-            <option value="instrumentist">Instrumentist</option>
+            {roleOptions.map((r) => (
+              <option key={r} value={r}>{roleLabel(r)}</option>
+            ))}
           </select>
           {formError && <p className="text-sm text-red-500 dark:text-red-400">{formError}</p>}
           <button
@@ -165,8 +181,9 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: User[] }) {
         </p>
         <div className="space-y-2">
           {verified.map((user) => {
-            const info = ROLE_LABELS[user.role] ?? ROLE_LABELS.user
             const name = [user.firstName, user.lastName].filter(Boolean).join(" ") || "—"
+            // Master row is never editable; admin rows only by the master.
+            const editable = !user.isMaster && (currentIsMaster || user.role !== "admin")
             return (
               <div key={user.id} className="bg-white dark:bg-gray-800 rounded-xl px-4 py-3 border border-gray-100 dark:border-gray-700 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-500 dark:text-gray-300 flex-shrink-0">
@@ -177,18 +194,19 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: User[] }) {
                   <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{user.email}</p>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${info.light} ${info.dark}`}>
-                    {info.label}
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${user.isMaster ? MASTER_BADGE_CLASS : roleBadgeClass(user.role)}`}>
+                    {user.isMaster ? MASTER_LABEL : roleLabel(user.role)}
                   </span>
-                  {user.role !== "admin" && (
+                  {editable && (
                     <select
                       value={user.role}
                       disabled={loading === user.id}
                       onChange={(e) => changeRole(user.id, e.target.value)}
                       className="text-xs bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-lg px-2 py-1 focus:outline-none focus:border-indigo-400 disabled:opacity-50"
                     >
-                      <option value="user">Utilizator</option>
-                      <option value="instrumentist">Instrumentist</option>
+                      {roleOptions.map((r) => (
+                        <option key={r} value={r}>{roleLabel(r)}</option>
+                      ))}
                     </select>
                   )}
                 </div>

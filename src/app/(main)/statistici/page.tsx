@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic"
 
-import { auth, canEditSongs } from "@/auth"
+import { auth, canPlan } from "@/auth"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import { servicePlans, servicePlanSongs, songs } from "@/lib/schema"
@@ -38,7 +38,7 @@ function aggregate(rows: Row[], threshold: string): StatWindow {
 
 export default async function StatisticiPage() {
   const session = await auth()
-  if (!session?.user || !canEditSongs(session.user.role)) redirect("/")
+  if (!session?.user || !canPlan(session.user.role)) redirect("/")
 
   const threshold12 = monthsAgo(12)
 

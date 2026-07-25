@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic"
 
-import { auth } from "@/auth"
+import { auth, canManageUsers, isMaster } from "@/auth"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import { users } from "@/lib/schema"
@@ -10,9 +10,9 @@ import Link from "next/link"
 
 export default async function AdminPage() {
   const session = await auth()
-  if (session?.user?.role !== "admin") redirect("/")
+  if (!session?.user || !canManageUsers(session.user.role)) redirect("/")
 
-  const allUsers = await db
+  const rows = await db
     .select({
       id: users.id,
       email: users.email,
@@ -24,6 +24,11 @@ export default async function AdminPage() {
     })
     .from(users)
     .orderBy(asc(users.createdAt))
+
+  // Tag the master row so the client can protect it; never send the master email
+  // as a special constant to the client — just a boolean per row.
+  const allUsers = rows.map((u) => ({ ...u, isMaster: isMaster(u.email) }))
+  const currentIsMaster = isMaster(session.user.email)
 
   return (
     <div className="min-h-screen bg-[#f0f2f5] dark:bg-gray-950">
@@ -42,7 +47,7 @@ export default async function AdminPage() {
           </div>
         </div>
 
-        <AdminUsersClient initialUsers={allUsers} />
+        <AdminUsersClient initialUsers={allUsers} currentIsMaster={currentIsMaster} />
       </div>
     </div>
   )

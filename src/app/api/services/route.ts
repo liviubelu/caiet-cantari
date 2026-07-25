@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server"
-import { auth, canEditSongs } from "@/auth"
+import { auth, canPlan } from "@/auth"
 import { db } from "@/lib/db"
 import { servicePlans, servicePlanSongs, servicePlanPeople, songs } from "@/lib/schema"
 import { eq, and, gte, lte, asc, inArray } from "drizzle-orm"
 
 export async function GET(req: Request) {
   const session = await auth()
-  if (!session?.user || !canEditSongs(session.user.role)) {
+  if (!session?.user || !canPlan(session.user.role)) {
     return NextResponse.json({ error: "Acces interzis." }, { status: 403 })
   }
   const { searchParams } = new URL(req.url)
@@ -69,7 +69,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const session = await auth()
-  if (!session?.user || !canEditSongs(session.user.role)) {
+  if (!session?.user || !canPlan(session.user.role)) {
     return NextResponse.json({ error: "Acces interzis." }, { status: 403 })
   }
   const { date, eventType = "slujba" } = await req.json()
