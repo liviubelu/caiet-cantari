@@ -1,28 +1,33 @@
 "use client"
 
+import { handoutFileName } from "@/lib/handout-name"
+
 /**
  * Opens the song as a real PDF (chords above lyrics, auto-fit to one A4 page) in
- * a new tab, via /song/[id]/handout. It renders inline in the browser's built-in
- * PDF viewer (on both phone and desktop), where the user prints/saves it.
+ * a new tab. The URL ends in the song's filename (…/handout/El e Fântâna.pdf) so
+ * the browser's built-in PDF viewer saves it with the song's name, not "handout".
  *
  * The current transpose is read at click time from sessionStorage (written by
- * SongDetailClient on every change), so the PDF comes out in the key the song is
- * showing right now — not the stored default.
+ * SongDetailClient), so the PDF comes out in the key shown on screen.
  */
-export function PdfExportButton({ songId }: { songId: string }) {
-  function open(e: React.MouseEvent<HTMLAnchorElement>) {
-    e.preventDefault()
+export function PdfExportButton({ songId, songTitle }: { songId: string; songTitle: string }) {
+  function buildUrl(): string {
+    const name = encodeURIComponent(handoutFileName(songTitle))
     let st = 0
     try {
       st = parseInt(sessionStorage.getItem(`transpose:${songId}`) ?? "0", 10) || 0
     } catch {}
-    const url = st ? `/song/${songId}/handout?st=${st}` : `/song/${songId}/handout`
-    window.open(url, "_blank", "noopener,noreferrer")
+    return `/song/${songId}/handout/${name}${st ? `?st=${st}` : ""}`
+  }
+
+  function open(e: React.MouseEvent<HTMLAnchorElement>) {
+    e.preventDefault()
+    window.open(buildUrl(), "_blank", "noopener,noreferrer")
   }
 
   return (
     <a
-      href={`/song/${songId}/handout`}
+      href={`/song/${songId}/handout/${encodeURIComponent(handoutFileName(songTitle))}`}
       target="_blank"
       rel="noopener noreferrer"
       onClick={open}

@@ -118,7 +118,7 @@ export default async function SongPage({ params }: Props) {
             {/* Projector presentation (only with a singing order) + PDF export */}
             <div className="mt-4 flex flex-wrap items-center gap-2">
               {slides.length > 0 && <PresentationButton title={song.title} slides={slides} />}
-              <PdfExportButton songId={song.id} />
+              <PdfExportButton songId={song.id} songTitle={song.title} />
             </div>
           </div>
 
